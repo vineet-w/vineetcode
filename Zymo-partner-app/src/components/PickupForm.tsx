@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface PickupFormProps {
+  city: string;
   onLocationChange: (location: string) => void;
 }
 
-const PickupForm: React.FC<PickupFormProps> = ({ onLocationChange }) => {
+const PickupForm: React.FC<PickupFormProps> = ({ city, onLocationChange }) => {
   const [address, setAddress] = useState<string>("");
+  const inputId = `autocomplete-${city.replace(/\s+/g, '-').toLowerCase()}`;
 
   const loadGoogleMapsScript = useCallback(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
@@ -20,16 +22,16 @@ const PickupForm: React.FC<PickupFormProps> = ({ onLocationChange }) => {
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
       script.async = true;
       script.defer = true;
-      script.onload = initializeAutocomplete;
+      script.onload = () => initializeAutocomplete(inputId);
       document.head.appendChild(script);
     } else {
-      initializeAutocomplete();
+      initializeAutocomplete(inputId);
     }
-  }, []);
+  }, [inputId]);
 
-  const initializeAutocomplete = useCallback(() => {
+  const initializeAutocomplete = useCallback((id: string) => {
     if (typeof window !== "undefined" && window.google) {
-      const input = document.getElementById("autocomplete") as HTMLInputElement;
+      const input = document.getElementById(id) as HTMLInputElement;
       if (!input) return;
 
       const options = {
@@ -54,13 +56,13 @@ const PickupForm: React.FC<PickupFormProps> = ({ onLocationChange }) => {
 
   return (
     <div className="p-1">
-      <h2 className="mb-4 dark:text-white">Pickup Location</h2>
-      <div className="mb-4">
+      <h2 className="mb-1 dark:text-white text-sm">Pickup Location for {city}</h2>
+      <div className="mb-1">
         <input
-          id="autocomplete"
+          id={inputId}
           type="text"
-          className="w-full p-2 border dark:bg-lightgray dark:text-white border-gray-500 rounded-2xl"
-          placeholder="Search for pickup location in India"
+          className="w-full p-2 border dark:bg-lightgray dark:text-white border-lightgray rounded-xl text-sm"
+          placeholder={`Search for pickup location in ${city}`}
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
