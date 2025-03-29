@@ -34,17 +34,17 @@ export function UploadCarPage() {
   const [usercities, setUserCities] = useState([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    name: "",
-    cities: [] as string[],
-    pickupLocation: "",
+    name: "", //car name
+    cities: [] as string[], //cities in which the car is available
+    pickupLocations: {} as { [key: string]: string }, //contains cities and their respective pickup location in pairs
     securityDeposit: "",
-    yearOfRegistration: new Date().getFullYear(),
+    yearOfRegistration: new Date().getFullYear(), //year in which the car was registered
     fuelType: FUEL_TYPES[0],
-    carType: CAR_TYPES[0],
-    transmissionType: TRANSMISSION_TYPES[0],
+    carType: CAR_TYPES[0], //type of car eg. SUV, Hatchback, Sedan
+    transmissionType: TRANSMISSION_TYPES[0], //eg. petrol, diesel etc.
     minBookingDuration: 1,
     unavailableDates: [] as string[],
-    unit: "hours",
+    unit: "hours", //minimum booking duration can be in hours or days
     noOfSeats: 4,
     hourlyRental: {
       limit: "Limit Type" as "Limit Type" | "Limited" | "Unlimited", // Limit type
@@ -84,23 +84,25 @@ export function UploadCarPage() {
         extraHourRate: "",
       },
     },
-    deliveryCharges: {
+    deliveryCharges: {  //delivery charges for different ranges of km
       enabled: false,
-      Range: "",
       charges: {
         "0-10": "",
         "10-25": "",
         "25-50": "",
       },
     },
-    slabRates: [
-      { duration: "0-12", rate: "" },
-      { duration: "12-24", rate: "" },
-      { duration: "24-48", rate: "" },
-      { duration: "48-96", rate: "" },
-      { duration: "96+", rate: "" },
-    ],
-    unavailableHours: { start: "00:00", end: "10:00" },
+    slabRates: {  //rate per hour according to different durations
+      enabled: false,
+      slabs: [
+        { duration: "0-12", rate: "" },
+        { duration: "12-24", rate: "" },
+        { duration: "24-48", rate: "" },
+        { duration: "48-96", rate: "" },
+        { duration: "96+", rate: "" },
+      ],
+    },
+    unavailableHours: { start: "00:00", end: "10:00" }, 
   });
 
   useEffect(() => {
@@ -188,10 +190,13 @@ export function UploadCarPage() {
     setImagePreviews(newPreviews);
   };
 
-  const handlePickupLocationChange = (location: string) => {
-    setFormData((prevDetails) => ({
-      ...prevDetails,
-      pickupLocation: location,
+  const handlePickupLocationChange = (city: string, location: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      pickupLocations: {
+        ...prev.pickupLocations,
+        [city]: location,
+      },
     }));
   };
 
@@ -283,10 +288,25 @@ export function UploadCarPage() {
   const inputRef = useRef<HTMLInputElement>(null); // Reference for input
 
   const handleSelectChange = (city: string) => {
-    const newCities = formData.cities.includes(city)
-      ? formData.cities.filter((c) => c !== city)
-      : [...formData.cities, city];
-    setFormData({ ...formData, cities: newCities });
+    setFormData((prev) => {
+      const cityIndex = prev.cities.indexOf(city);
+      const newCities =
+        cityIndex === -1
+          ? [...prev.cities, city]
+          : prev.cities.filter((c) => c !== city);
+
+      const newPickupLocations = { ...prev.pickupLocations };
+      if (cityIndex !== -1) {
+        // Remove the pickup location if city is being deselected
+        delete newPickupLocations[city];
+      }
+
+      return {
+        ...prev,
+        cities: newCities,
+        pickupLocations: newPickupLocations,
+      };
+    });
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -425,7 +445,7 @@ export function UploadCarPage() {
                 )}
               </div>
 
-              {/* Cities */}
+              {/* Cities and Pickup Locations */}
               <div className="">
                 <label className="block text-sm px-1 font-medium text-gray-700 dark:text-white mb-3">
                   Cities Available
@@ -436,9 +456,9 @@ export function UploadCarPage() {
                   <input
                     ref={inputRef}
                     type="text"
-                    value={formData.cities.join(", ")} // Display selected cities as a comma-separated string
+                    value={formData.cities.join(", ")}
                     readOnly
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Toggle dropdown on click
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="mt-1 dark:text-white pl-3 block w-full border border-gray-500 rounded-2xl p-2 dark:bg-lightgray dark:border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
                     placeholder="Select cities..."
                   />
@@ -447,23 +467,23 @@ export function UploadCarPage() {
                   {isDropdownOpen && (
                     <div
                       ref={dropdownRef}
-                      className="absolute left-0 w-full mt-1 bg-white 00 border border-lime rounded-2xl shadow-lg max-h-60 overflow-y-auto dark:bg-lightgray z-10"
+                      className="absolute left-0 w-full mt-1 bg-white border border-lime rounded-2xl shadow-lg max-h-60 overflow-y-auto dark:bg-lightgray z-10"
                     >
                       <input
                         type="text"
                         placeholder="Search cities..."
                         value={searchTerm}
                         onChange={handleSearchChange}
-                        className="w-full p-2 border-b border-b-lime border-gray-300 dark:bg-lightgray dark:text-white focus:ring-lime "
+                        className="w-full p-2 border-b border-b-lime border-gray-300 dark:bg-lightgray dark:text-white focus:ring-lime"
                       />
                       <div className="max-h-48 overflow-y-auto">
                         {filteredCities.map((city) => (
                           <div
                             key={city}
-                            className="flex items-center space-x-2 p-2 hover:bg-lime/30  cursor-pointer"
-                            onClick={() => handleSelectChange(city)} // Toggle checkbox when clicking the city
+                            className="flex items-center space-x-2 p-2 hover:bg-lime/30 cursor-pointer"
+                            onClick={() => handleSelectChange(city)}
                           >
-                            <span className="text-sm dark:text-gray-300 ">
+                            <span className="text-sm dark:text-gray-300">
                               {city}
                             </span>
                           </div>
@@ -473,30 +493,42 @@ export function UploadCarPage() {
                   )}
                 </div>
 
-                {/* Display Selected Cities Below the Input */}
-                <div className="mt-4">
+                {/* Display Selected Cities with Pickup Locations */}
+                <div className="mt-4 space-y-4">
                   {formData.cities.map((city) => (
-                    <span
+                    <div
                       key={city}
-                      className="inline-flex items-center px-2 py-1 text-xs bg-lime rounded-full mr-2 mb-2"
+                      className="bg-gray-100 dark:bg-black/20 p-3 rounded-2xl"
                     >
-                      {city}
-                      <button
-                        type="button"
-                        onClick={() => handleSelectChange(city)} // Deselect the city
-                        className="ml-1 text-sm text-red-600"
-                      >
-                        ×
-                      </button>
-                    </span>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium dark:text-white">
+                          {city}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectChange(city)}
+                          className="text-sm text-red-600"
+                        >
+                          × Remove
+                        </button>
+                      </div>
+
+                      {/* City-specific Pickup Location */}
+                      <PickupForm
+                        city={city}
+                        onLocationChange={(location: string) =>
+                          handlePickupLocationChange(city, location)
+                        }
+                      />
+                      {formData.pickupLocations[city] && (
+                        <p className="ml-1 dark:text-white text-sm mt-1">
+                          Selected Pickup Location:{" "}
+                          {formData.pickupLocations[city]}
+                        </p>
+                      )}
+                    </div>
                   ))}
                 </div>
-              </div>
-              <div>
-                <PickupForm onLocationChange={handlePickupLocationChange} />
-                <p className="ml-1 dark:text-white">
-                  Selected Pickup Location: {formData.pickupLocation}
-                </p>
               </div>
               <Input
                 label="Security Deposit"
@@ -690,28 +722,59 @@ export function UploadCarPage() {
                     </select>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <label className="block font-medium dark:text-white text-gray-700 mt-6">
-                    Slab-wise Rates (₹/hr)
-                  </label>
-                  {formData.slabRates.map((slab, index) => (
-                    <div key={index} className="grid grid-cols-2 gap-4">
-                      <Input
-                        label={`Duration: ${slab.duration} hours`}
-                        type="text"
-                        prefix="₹"
-                        value={slab.rate}
-                        onChange={(e: { target: { value: any } }) => {
-                          const updatedSlabs = [...formData.slabRates];
-                          updatedSlabs[index].rate = e.target.value;
-                          setFormData({ ...formData, slabRates: updatedSlabs });
-                        }}
-                      />
+                {/* Slab-wise Rates */}
+                <div className="space-y-4 my-2">
+                  <div className="flex items-center space-x-2 mt-6">
+                    <input
+                      type="checkbox"
+                      checked={formData.slabRates.enabled}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          slabRates: {
+                            ...formData.slabRates,
+                            enabled: e.target.checked,
+                          },
+                        });
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                    <label className="text-sm flex gap-2 font-medium dark:text-white text-gray-700">
+                      Slab-wise Rates <b className="text-red-500">(₹/hr)</b>
+                      <span>(Rate per hour)</span>
+                    </label>
+                  </div>
+
+                  {formData.slabRates.enabled && (
+                    <div className="space-y-4 pl-6">
+                      {formData.slabRates.slabs.map((slab, index) => (
+                        <div key={index} className="grid grid-cols-2 gap-4">
+                          <Input
+                            label={`Duration: ${slab.duration} hours`}
+                            type="text"
+                            prefix="₹"
+                            value={slab.rate}
+                            onChange={(e: { target: { value: string } }) => {
+                              const updatedSlabs = [
+                                ...formData.slabRates.slabs,
+                              ];
+                              updatedSlabs[index].rate = e.target.value;
+                              setFormData({
+                                ...formData,
+                                slabRates: {
+                                  ...formData.slabRates,
+                                  slabs: updatedSlabs,
+                                },
+                              });
+                            }}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
                 {/* Fixed Hourly Rate Section */}
-                <div className="space-y-4 mt-10">
+                <div className="space-y-4 mt-6">
                   <div className="flex items-center space-x-2">
                     <label className="text-sm font-medium dark:text-white text-gray-700">
                       Hourly Rate (₹/hr){" "}
@@ -1661,7 +1724,6 @@ export function UploadCarPage() {
                 )}
               </div>
             </div>
-            <div></div>
             <div className="flex justify-center space-x-4">
               <Button
                 type="button"
