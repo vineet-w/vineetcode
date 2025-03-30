@@ -7,7 +7,7 @@ import { Car as CarIcon, Upload, X } from "lucide-react";
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
 //import { AppDispatch } from '../store/store';
-import { collection, addDoc, updateDoc } from "firebase/firestore";
+import { updateDoc, setDoc } from "firebase/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../lib/firebase"; // Import Firebase Firestore instance
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -34,11 +34,12 @@ export function UploadCarPage() {
   const [usercities, setUserCities] = useState([]);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    name: "", //car name
+    carBrand: "",
+    carName: "", //car name
     cities: [] as string[], //cities in which the car is available
     pickupLocations: {} as { [key: string]: string }, //contains cities and their respective pickup location in pairs
     securityDeposit: "",
-    yearOfRegistration: new Date().getFullYear(), //year in which the car was registered
+    yearOfRegistration: null as number | null, //year in which the car was registered
     fuelType: FUEL_TYPES[0],
     carType: CAR_TYPES[0], //type of car eg. SUV, Hatchback, Sedan
     transmissionType: TRANSMISSION_TYPES[0], //eg. petrol, diesel etc.
@@ -84,7 +85,8 @@ export function UploadCarPage() {
         extraHourRate: "",
       },
     },
-    deliveryCharges: {  //delivery charges for different ranges of km
+    deliveryCharges: {
+      //delivery charges for different ranges of km
       enabled: false,
       charges: {
         "0-10": "",
@@ -92,7 +94,8 @@ export function UploadCarPage() {
         "25-50": "",
       },
     },
-    slabRates: {  //rate per hour according to different durations
+    slabRates: {
+      //rate per hour according to different durations
       enabled: false,
       slabs: [
         { duration: "0-12", rate: "" },
@@ -102,7 +105,7 @@ export function UploadCarPage() {
         { duration: "96+", rate: "" },
       ],
     },
-    unavailableHours: { start: "00:00", end: "10:00" }, 
+    unavailableHours: { start: "00:00", end: "10:00" },
   });
 
   useEffect(() => {
@@ -226,7 +229,13 @@ export function UploadCarPage() {
 
     try {
       const user = auth.currentUser;
-      const uid = user ? user.uid : null;
+      if (!user) {
+        setError("Authentication error. Please log in again.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const uid = user.uid; 
 
       if (!uid) {
         console.error("User is not logged in. Cannot upload car details.");
@@ -234,6 +243,17 @@ export function UploadCarPage() {
         setIsSubmitting(false);
         return;
       }
+
+      let userNameFirstLetter = "U"; // Default if no name
+      if (user.displayName) {
+        userNameFirstLetter = user.displayName.charAt(0).toUpperCase();
+      } else if (user.email) {
+        userNameFirstLetter = user.email.charAt(0).toUpperCase();
+      }
+
+      const timestampId = Date.now().toString(36).toUpperCase();
+      const generatedCarId = `${userNameFirstLetter}${timestampId}`;
+
       const storage = getStorage();
 
       let imageUrls = imagePreviews;
@@ -255,6 +275,7 @@ export function UploadCarPage() {
       const carData = {
         ...formData,
         images: imageUrls,
+        carId: generatedCarId,
       };
 
       if (isEditMode && carId) {
@@ -264,8 +285,14 @@ export function UploadCarPage() {
         setSuccessMessage("Changes saved successfully!"); // Set success message
       } else {
         // Add new car document
-        const carsRef = collection(db, "partnerWebApp", uid, "uploadedCars");
-        await addDoc(carsRef, carData);
+        const carDocRef = doc(
+          db,
+          "partnerWebApp",
+          uid,
+          "uploadedCars",
+          generatedCarId
+        );
+        await setDoc(carDocRef, carData);
         setSuccessMessage("Car uploaded successfully!"); // Set success message
       }
 
@@ -383,13 +410,24 @@ export function UploadCarPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-6">
               <Input
-                label="Car Name"
+                label="Car Brand"
                 required
-                value={formData.name}
+                value={formData.carBrand}
                 onChange={(e: { target: { value: any } }) =>
                   setFormData({
                     ...formData,
-                    name: e.target.value,
+                    carBrand: e.target.value,
+                  })
+                }
+              />
+              <Input
+                label="Car Name"
+                required
+                value={formData.carName}
+                onChange={(e: { target: { value: any } }) =>
+                  setFormData({
+                    ...formData,
+                    carName: e.target.value,
                   })
                 }
               />
@@ -551,18 +589,18 @@ export function UploadCarPage() {
                     Year of Registration
                   </label>
                   <select
-                    value={formData.yearOfRegistration}
-                    style={{
-                      colorScheme: "",
-                    }}
+                    value={formData.yearOfRegistration ?? ""} // Handle null/undefined
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        yearOfRegistration: Number(e.target.value),
+                        yearOfRegistration: e.target.value
+                          ? Number(e.target.value)
+                          : null, // Store as number or null
                       })
                     }
-                    className="mt-1 block w-full rounded-2xl border border-lightgray p-2 dark:bg-lightgray dark:text-white  shadow-sm focus:border-yellow-500 focus:ring-yellow-500"
+                    className="mt-1 block w-full rounded-2xl border border-lightgray p-2 dark:bg-lightgray dark:text-white shadow-sm focus:border-lime focus:ring-lime"
                   >
+                    <option value="">Select year</option> {/* Empty option */}
                     {Array.from(
                       { length: 20 },
                       (_, i) => new Date().getFullYear() - i
