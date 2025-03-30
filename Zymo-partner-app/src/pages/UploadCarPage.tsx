@@ -1,12 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-//import { useDispatch } from 'react-redux';
 import { useDropzone } from "react-dropzone";
 import { Car as CarIcon, Upload, X } from "lucide-react";
 
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
-//import { AppDispatch } from '../store/store';
 import { updateDoc, setDoc } from "firebase/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../lib/firebase"; // Import Firebase Firestore instance
@@ -154,8 +152,8 @@ export function UploadCarPage() {
       if (user) {
         // User is signed in
         const userId = uid || user.uid;
-        // Do what you need with the userId
-        setError(null); // Clear any previous errors
+
+        setError(null);
       } else {
         // No user is signed in
         setError("User ID is missing. Please log in again.");
@@ -235,7 +233,7 @@ export function UploadCarPage() {
         return;
       }
 
-      const uid = user.uid; 
+      const uid = user.uid;
 
       if (!uid) {
         console.error("User is not logged in. Cannot upload car details.");
