@@ -18,20 +18,77 @@ import "react-day-picker/dist/style.css";
 
 interface CarListing {
   id: string;
-  name: string;
+  carBrand: string;
+  carName: string;
   cities: string[];
   images: string[];
-  pickupLocation: string;
-  securityDeposit: number;
-  yearOfRegistration: number;
+  pickupLocations: { [key: string]: string }; // Changed from single pickupLocation
+  securityDeposit: string; // Changed from number to string
+  yearOfRegistration: number | null; // Added null possibility
   fuelType: string;
   carType: string;
-  hourlyRate: number;
-  unavailableDates: string[];
   transmissionType: string;
   minBookingDuration: number;
-  kmRate: number;
-  extraHourRate: number;
+  unit: string; // New field
+  noOfSeats: number; // New field
+  unavailableDates: string[];
+  unavailableHours: { start: string; end: string }; // New field
+
+  // Updated rental pricing structure
+  hourlyRental: {
+    limit: "Limit Type" | "Limited" | "Unlimited";
+    limited?: {
+      packages: Array<{ hourlyRate: string; kmPerHour: string }>;
+      extraKmRate: string;
+      extraHourRate: string;
+    };
+    unlimited?: {
+      fixedHourlyRate: string;
+      extraHourRate: string;
+    };
+  };
+
+  weeklyRental?: {
+    available: boolean;
+    limit: "Limit Type" | "Unlimited" | "Limited";
+    limited?: {
+      packages: Array<{ weeklyRate: string; kmPerWeek: string }>;
+      extraKmRate: string;
+      extraHourRate: string;
+    };
+    unlimited?: {
+      fixedWeeklyRate: string;
+      extraHourRate: string;
+    };
+  };
+
+  monthlyRental?: {
+    available: boolean;
+    limit: "Limit Type" | "Unlimited" | "Limited";
+    limited?: {
+      packages: Array<{ monthlyRate: string; kmPerMonth: string }>;
+      extraKmRate: string;
+      extraHourRate: string;
+    };
+    unlimited?: {
+      fixedMonthlyRate: string;
+      extraHourRate: string;
+    };
+  };
+
+  deliveryCharges?: {
+    enabled: boolean;
+    charges: {
+      "0-10": string;
+      "10-25": string;
+      "25-50": string;
+    };
+  };
+
+  slabRates?: {
+    enabled: boolean;
+    slabs: Array<{ duration: string; rate: string }>;
+  };
 }
 
 export function Home() {
@@ -48,7 +105,7 @@ export function Home() {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
   const [carToDelete, setCarToDelete] = useState<CarListing | null>(null);
-  
+
   const handleDeleteCar = async (): Promise<void> => {
     if (!carToDelete || !auth.currentUser) return;
 
@@ -254,15 +311,21 @@ export function Home() {
                 {userEmail ? `Welcome, ${userEmail}!` : "Welcome!"}
               </h1>
             </div>
-
             {/* Car Listings */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               {cars.map((car, index) => {
+                // Calculate display price (example using first hourly package)
+                const displayPrice =
+                  car.hourlyRental.limited?.packages[0]?.hourlyRate ||
+                  car.hourlyRental.unlimited?.fixedHourlyRate ||
+                  "Price not set";
+
                 return (
                   <div
                     key={car.id}
-                    className="bg-white dark:bg-lightgray rounded-lg shadow-lg overflow-hidden hover:shadow-custom-even hover:shadow-lime transition duration-300 ease-in-out hover:scale-100"
+                    className="bg-white dark:bg-lightgray rounded-2xl shadow-lg overflow-hidden hover:shadow-custom-even hover:shadow-lime transition duration-300 ease-in-out hover:scale-100"
                   >
+                    {/* Image Gallery (unchanged) */}
                     <div className="img-container relative w-full overflow-hidden rounded-2xl">
                       {/* Backward Button */}
                       <button
@@ -271,7 +334,7 @@ export function Home() {
                           handlePrevImage(index, car.images.length)
                         }
                       >
-                        &#10094; {/* Left arrow */}
+                        &#10094;
                       </button>
 
                       {/* Image Scroller */}
@@ -284,12 +347,12 @@ export function Home() {
                           }%)`,
                         }}
                       >
-                        {car.images.map((img, index) => (
+                        {car.images.map((img, imgIndex) => (
                           <img
-                            key={index}
+                            key={imgIndex}
                             src={img}
-                            alt={`${car.name} ${index}`}
-                            className="w-full h-48 object-cover"
+                            alt={`${car.carName} ${imgIndex}`}
+                            className="w-full h-48 object-cover rounded-2xl"
                           />
                         ))}
                       </div>
@@ -301,28 +364,62 @@ export function Home() {
                           handleNextImage(index, car.images.length)
                         }
                       >
-                        &#10095; {/* Right arrow */}
+                        &#10095;
                       </button>
                     </div>
+
                     <div className="p-4">
-                      <h2 className="text-xl font-semibold text-lightgray dark:text-gray-100">
-                        {car.name}
-                      </h2>
+                      <div className="flex gap-1">
+                        <h2 className="text-xl font-semibold text-lightgray dark:text-gray-100">
+                          {car.carBrand}
+                        </h2>
+                        <h2 className="text-xl font-semibold text-lightgray dark:text-gray-100">
+                          {car.carName}
+                        </h2>
+                      </div>
+
                       <p className="flex gap-1 my-2 text-gray-600 dark:text-gray-300">
                         <MapPinIcon />
                         {car.cities.join(", ")}
                       </p>
-                      <p className="m-1 text-gray-600 dark:text-white">
-                        Hourly Rate: ₹ {car.hourlyRate}
-                      </p>
-                      <p className="m-1 dark:text-white">
-                        Car Type: {car.carType}
-                      </p>
-                      <p className="m-1 dark:text-white">
-                        Pickup Location: {car.pickupLocation}
-                      </p>
+
+                      {/* Display pricing information */}
+                      <div className="space-y-1">
+                        <p className="m-1 text-gray-600 dark:text-white">
+                          Hourly Rate: ₹ {displayPrice}
+                        </p>
+
+                        {car.hourlyRental.limited && (
+                          <p className="m-1 text-sm dark:text-gray-300">
+                            {car.hourlyRental.limited.packages[0]?.kmPerHour ||
+                              "N/A"}{" "}
+                            km/hour
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Car specifications */}
+                      <div className="space-y-1 mt-2">
+                        <p className="m-1 dark:text-white">
+                          Type: {car.carType} | {car.fuelType} |{" "}
+                          {car.transmissionType}
+                        </p>
+                        <p className="m-1 dark:text-white">
+                          Seats: {car.noOfSeats} | Year of Reg.:{" "}
+                          {car.yearOfRegistration || "N/A"}
+                        </p>
+                        <p className="m-1 dark:text-white">
+                          Min. Booking: {car.minBookingDuration} {car.unit}
+                        </p>
+
+                        <p className="m-1 dark:text-white">
+                          Unavailable: {car.unavailableHours.start} to{" "}
+                          {car.unavailableHours.end}
+                        </p>
+                      </div>
+
                       {logo && (
-                        <div className="">
+                        <div className="mt-2">
                           <img
                             src={logo}
                             alt="Company Logo"
@@ -331,7 +428,7 @@ export function Home() {
                         </div>
                       )}
 
-                      {/* Select Unavailable Dates Button */}
+                      {/* Action buttons */}
                       <div className="mt-4">
                         <button
                           onClick={() => openModal(car)}
@@ -368,7 +465,8 @@ export function Home() {
                     Confirm Deletion
                   </h3>
                   <p className="mb-4 dark:text-gray-400 text-gray-800">
-                    Are you sure you want to delete the car "{carToDelete.name}
+                    Are you sure you want to delete the car "
+                    {carToDelete.carName}
                     "? This action cannot be undone.
                   </p>
 
