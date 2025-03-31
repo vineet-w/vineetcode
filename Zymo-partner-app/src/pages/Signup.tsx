@@ -113,8 +113,15 @@ export function Signup() {
     async function fetchCities(query = "New") {
       // Default query to get initial results
       try {
+        const functionsUrl = 'https://us-central1-zymo-prod.cloudfunctions.net/zymoPartner/';
         const response = await fetch(
-          `https://zymo-partner-app-omega.vercel.app/indian-cities?query=${query}`
+          `${functionsUrl}cities/indian-cities`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ query }),
+          }
         );
         const data = await response.json();
         const cityNames = data.cities.map((city: string) =>

@@ -30,10 +30,20 @@ export function ProfilePage() {
   useEffect(() => {
     async function fetchCities(query = "New") {
       try {
+        // const functionsUrl = 'https://us-central1-zymo-prod.cloudfunctions.net/zymoPartner/';
+        const functionsUrl = "http://127.0.0.1:5001/zymo-prod/us-central1/zymoPartner/";
+        console.log(query)
         const response = await fetch(
-          `https://zymo-partner-app-omega.vercel.app/indian-cities?query=${query}`
+          `${functionsUrl}cities/indian-cities`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ query }),
+          }
         );
         const data = await response.json();
+        console.log(data);
         const cityNames = data.cities.map((city: string) =>
           city.split(",")[0].trim()
         );
