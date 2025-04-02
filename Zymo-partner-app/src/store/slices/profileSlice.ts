@@ -8,7 +8,7 @@ interface UnavailableHours {
 }
 
 interface Profile {
-  username: string;
+  fullName: string;
   email: string;
   brandName: string;
   phone: string;
@@ -29,7 +29,7 @@ const defaultUnavailableHours: UnavailableHours = {
 };
 
 const initialState: Profile = {
-  username: '',
+  fullName: '',
   email: '',
   brandName: '',
   phone: '',

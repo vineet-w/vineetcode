@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { addDoc, collection, doc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { Car, Check } from "lucide-react";
 import { auth, db } from "../lib/firebase";
 import { Input } from "../components/Input";
@@ -304,7 +304,7 @@ export function Signup() {
                 value={formData.cities.join(", ")} // Display selected cities as a comma-separated string
                 readOnly
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)} // Toggle dropdown on click
-                className="mt-1 pl-3 block w-full border text-white border-gray-500 rounded-2xl p-2 bg-lightgray dark:border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
+                className="mt-1 pl-3 block w-full border text-white rounded-2xl p-2 bg-lightgray   border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
                 placeholder="Select cities..."
               />
 
@@ -711,7 +711,7 @@ export function Signup() {
       console.log("Created", user);
       const userRef = doc(db, "partnerWebApp", user.uid);
       await setDoc(userRef, {
-        username: formData.email,
+        email: formData.email,
         accountType: formData.accountType,
         fullName: formData.fullName,
         phone: formData.phone,
