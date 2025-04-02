@@ -7,7 +7,7 @@ export function Layout() {
   const [isDashboardOpen, setIsDashboardOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-cover bg-center dark:bg-darkgray font-montserrat" 
+    <div className="min-h-screen bg-cover bg-center  bg-darkgray font-montserrat" 
       >
       <Sidebar
         isDashboardOpen={isDashboardOpen}

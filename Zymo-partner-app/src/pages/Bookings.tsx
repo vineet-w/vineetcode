@@ -104,16 +104,16 @@ export default function Bookings() {
   }
 
   return (
-    <div className="bg-lime rounded-2xl dark:bg-transparent">
+    <div className="bg-lime rounded-2xl   bg-transparent">
       <div className="max-w-6xl mx-auto px-4 py-8 text-lime-400">
-        <div className="dark:bg-darkgray bg-white rounded-2xl shadow-lg p-6 animate-slide-in border border-lime">
+        <div className="  bg-darkgray bg-white rounded-2xl shadow-lg p-6 animate-slide-in border border-lime">
           {/* Page Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <div className="bg-lime-200 text-darklime dark:text-lime p-3 rounded-full">
+              <div className="bg-lime-200 text-darklime   text-lime p-3 rounded-full">
                 <Calendar className="h-6 w-6 text-lime-600" />
               </div>
-              <h1 className="text-2xl font-bold dark:text-lime text-darklime">
+              <h1 className="text-2xl font-bold   text-lime text-darklime">
                 Bookings
               </h1>
             </div>
@@ -123,7 +123,7 @@ export default function Bookings() {
           <div className="space-y-6">
             {sortedBookings.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-gray-500   text-gray-400">
                   No bookings found
                 </p>
               </div>
@@ -133,7 +133,7 @@ export default function Bookings() {
                   key={booking.id}
                   className={`p-6 rounded-2xl ${
                     booking.status === 'active'
-                      ? ' bg-gray-200 dark:bg-lightgray'
+                      ? ' bg-gray-200   bg-lightgray'
                       : 'border border-lightgray'
                   }`}
                 >
@@ -142,15 +142,15 @@ export default function Bookings() {
                     <div className="space-y-2 flex-1">
                       <div className="flex items-center space-x-2">
                         {getStatusIcon(booking.status)}
-                        <span className="font-medium capitalize dark:text-gray-300">
+                        <span className="font-medium capitalize   text-gray-300">
                           {booking.status}
                         </span>
                       </div>
-                      <h3 className="text-xl font-semibold dark:text-white">
+                      <h3 className="text-xl font-semibold   text-white">
                         {booking.vehicle}
                       </h3>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 dark:text-gray-300">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4   text-gray-300">
                         <div className="flex items-start space-x-2 ">
                           <User className="h-5 w-5 text-lime-600 mt-0.5" />
                           <span>{booking.customerName}</span>
@@ -171,7 +171,7 @@ export default function Bookings() {
 
                     {/* Amount and Actions */}
                     <div className="flex flex-col items-end space-y-3">
-                      <div className="text-2xl font-bold dark:text-white">
+                      <div className="text-2xl font-bold   text-white">
                         ₹{booking.totalAmount.toLocaleString()}
                       </div>
                       <div className="flex space-x-3">
@@ -179,7 +179,7 @@ export default function Bookings() {
                           View Details
                         </button>
                         {booking.status === 'active' && (
-                          <button className="px-4 py-2 border border-gray-700 dark:border-lime  dark:text-lime rounded-full hover:bg-lime-50 dark:hover:bg-gray-700 transition">
+                          <button className="px-4 py-2 border border-gray-700   border-lime    text-lime rounded-full hover:bg-lime-50   hover:bg-gray-700 transition">
                             Manage
                           </button>
                         )}

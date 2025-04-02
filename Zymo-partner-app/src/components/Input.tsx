@@ -17,17 +17,17 @@ export function Input({ label, error, className = "", prefix, ...props }: any) {
 
   return (
     <div className="space-y-2 my-2">
-      <label htmlFor={props.id} className="block px-1 text-sm font-medium dark:text-white">
+      <label htmlFor={props.id} className="block px-1 text-sm font-medium   text-white">
         {label}
       </label>
       <div className="relative">
         {prefix && (
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600 dark:text-gray-300">
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2  text-gray-300">
             {prefix}
           </span>
         )}
         <input
-          className={`appearance-none block w-full bg-transparent dark:bg-lightgray dark:border-hidden py-2 rounded-2xl shadow-sm border border-gray-500 placeholder-gray-400 dark:text-white focus:outline-none focus:ring-lime focus:border-lime sm:text-sm ${
+          className={`appearance-none block w-full bg-transparent bg-lightgray  py-2 rounded-2xl shadow-sm border border-gray-500 placeholder-gray-400  text-white focus:outline-none focus:ring-lime focus:border-lime sm:text-sm ${
             error ? "border-red-300" : ""
           } ${prefix ? "pl-8" : "px-3"} ${className}`}
           {...props}

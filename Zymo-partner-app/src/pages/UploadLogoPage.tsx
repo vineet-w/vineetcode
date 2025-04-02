@@ -71,14 +71,14 @@ export function UploadLogoPage() {
   });
 
   return (
-    <div className='bg-lime dark:bg-transparent h-min-screen rounded-xl'>
+    <div className='bg-lime   bg-transparent h-min-screen rounded-xl'>
       <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-darkgray border border-lime rounded-3xl shadow-lg p-6">
+        <div className="  bg-darkgray border border-lime rounded-3xl shadow-lg p-6">
           <div className="flex items-center space-x-4 mb-8">
             <div className="bg-lime p-3 rounded-full">
               <ImageIcon className="h-6 w-6 text-darklime" />
             </div>
-            <h1 className="text-2xl font-bold text-darklime dark:text-lime">Upload Logo</h1>
+            <h1 className="text-2xl font-bold text-lime">Upload Logo</h1>
           </div>
 
           {error && (
@@ -92,12 +92,12 @@ export function UploadLogoPage() {
             className={`
               border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer
               transition-colors duration-200
-              ${isDragActive ? ' bg-yellow-50' : 'border-gray-300 hover:border-lime dark:hover:border-darklime'}
+              ${isDragActive ? ' bg-yellow-50' : 'border-gray-300 hover:border-lime'}
             `}
           >
             <input {...getInputProps()} />
             <Upload className="mx-auto h-12 w-12 text-gray-400" />
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-2 text-sm text-gray-500">
               Drag and drop your logo here, or click to select a file
             </p>
             <p className="text-xs text-gray-500 mt-1">
