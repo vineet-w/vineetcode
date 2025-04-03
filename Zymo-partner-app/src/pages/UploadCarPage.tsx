@@ -5,7 +5,7 @@ import { Car as CarIcon, Upload, X } from "lucide-react";
 
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
-import { updateDoc, setDoc } from "firebase/firestore";
+import { updateDoc, setDoc, Firestore } from "firebase/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../lib/firebase"; // Import Firebase Firestore instance
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -34,6 +34,8 @@ export function UploadCarPage() {
   const [formData, setFormData] = useState({
     carBrand: "",
     carName: "", //car name
+    vendorBrandName: "",
+    vendorLogo: "",
     cities: [] as string[], //cities in which the car is available
     pickupLocations: {} as { [key: string]: string }, //contains cities and their respective pickup location in pairs
     securityDeposit: "",
@@ -148,10 +150,27 @@ export function UploadCarPage() {
 
   useEffect(() => {
     // Use Firebase's auth state observer instead of just checking currentUser once
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         // User is signed in
-        const userId = uid || user.uid;
+        try {
+          const userId = uid || user.uid;
+          const userDocRef = doc(db, "partnerWebApp", userId);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setFormData((prev) => ({
+              ...prev,
+              vendorBrandName: userData?.brandName || "",
+              vendorLogo: userData?.logo || "",
+            }));
+            console.log(userData);
+          }
+          setError(null);
+        } catch (err) {
+          console.error("Error fetching vendor details:", err);
+          setError("Failed to load vendor information");
+        }
 
         setError(null);
       } else {
@@ -161,7 +180,6 @@ export function UploadCarPage() {
       }
     });
 
-    // Clean up the listener when component unmounts
     return () => unsubscribe();
   }, []); // Empty dependency array as we want this to run once when component mounts
 
