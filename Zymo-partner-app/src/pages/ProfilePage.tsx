@@ -20,8 +20,8 @@ export function ProfilePage() {
   const [cities, setCities] = useState([]);
   const [showUnavailableHours, setShowUnavailableHours] = useState(false);
   const [unavailableHours, setUnavailableHours] = useState<UnavailableHours>({
-    start: '00:00',
-    end: '06:00'
+    start: "00:00",
+    end: "06:00",
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -31,17 +31,16 @@ export function ProfilePage() {
     async function fetchCities(query = "New") {
       try {
         // const functionsUrl = 'https://us-central1-zymo-prod.cloudfunctions.net/zymoPartner/';
-        const functionsUrl = "http://127.0.0.1:5001/zymo-prod/us-central1/zymoPartner/";
-        console.log(query)
-        const response = await fetch(
-          `${functionsUrl}cities/indian-cities`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ query }),
-          }
-        );
+        const functionsUrl =
+          "http://127.0.0.1:5001/zymo-prod/us-central1/zymoPartner/";
+        console.log(query);
+        const response = await fetch(`${functionsUrl}cities/indian-cities`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
         const data = await response.json();
         console.log(data);
         const cityNames = data.cities.map((city: string) =>
@@ -68,8 +67,8 @@ export function ProfilePage() {
       // Initialize unavailable hours from profile or use defaults
       setUnavailableHours(
         profile.unavailableHours || {
-          start: '00:00',
-          end: '06:00'
+          start: "00:00",
+          end: "06:00",
         }
       );
     }
@@ -86,7 +85,7 @@ export function ProfilePage() {
         setIsDropdownOpen(false);
       }
     };
-    
+
     setTimeout(() => {
       setShowForm(true);
     }, 200);
@@ -98,7 +97,7 @@ export function ProfilePage() {
   const handleSave = async () => {
     const updatedData = {
       ...formData,
-      unavailableHours: unavailableHours
+      unavailableHours: unavailableHours,
     };
     await dispatch(updateProfile(updatedData));
     setIsEditing(false);
@@ -106,11 +105,11 @@ export function ProfilePage() {
 
   const handleUnavailableHoursChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    field: 'start' | 'end'
+    field: "start" | "end"
   ) => {
     setUnavailableHours({
       ...unavailableHours,
-      [field]: e.target.value
+      [field]: e.target.value,
     });
   };
 
@@ -148,16 +147,16 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="bg-lime rounded-2xl dark:bg-transparent">
+    <div className="bg-lime rounded-2xl   bg-transparent">
       <div className="max-w-4xl mx-auto px-4 py-8 text-lime-400">
-        <div className="dark:bg-darkgray bg-white rounded-2xl shadow-lg p-6 animate-slide-in border border-lime">
+        <div className="  bg-darkgray rounded-2xl shadow-lg p-6 animate-slide-in border border-lime">
           {/* Profile Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <div className="bg-lime-200 text-darklime dark:text-lime p-3 rounded-full">
+              <div className="bg-lime-200 text-lime p-3 rounded-full">
                 <User className="h-6 w-6 text-lime-600" />
               </div>
-              <h1 className="text-2xl font-bold dark:text-lime text-darklime">
+              <h1 className="text-2xl font-bold   text-lime">
                 Profile Settings
               </h1>
             </div>
@@ -166,88 +165,88 @@ export function ProfilePage() {
               className="flex items-center space-x-2 font-semibold bg-lime px-4 py-2 rounded-full"
             >
               <Save className="h-4 w-4" />
-              <span>{isEditing ? 'Save Changes' : 'Edit Profile'}</span>
+              <span>{isEditing ? "Save Changes" : "Edit Profile"}</span>
             </button>
           </div>
 
           {/* Profile Inputs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Input
-              label={<span className="text-darklime dark:text-lime">Username</span>}
-              value={formData.username}
-              onChange={(e: { target: { value: any; }; }) =>
-                setFormData({ ...formData, username: e.target.value })
+              label={<span className="   text-lime">Full name</span>}
+              value={formData.fullName}
+              onChange={(e: { target: { value: any } }) =>
+                setFormData({ ...formData, fullName: e.target.value })
               }
               className="text-white"
               disabled={!isEditing}
             />
             <Input
-              label={<span className="text-darklime dark:text-lime">Email</span>}
+              label={<span className=" text-lime">Email</span>}
               type="email"
               value={formData.email}
-              onChange={(e: { target: { value: any; }; }) =>
+              onChange={(e: { target: { value: any } }) =>
                 setFormData({ ...formData, email: e.target.value })
               }
               className="text-white"
               disabled={!isEditing}
             />
             <Input
-              label={<span className="text-darklime dark:text-lime">Brand Name</span>}
+              label={<span className="  text-lime">Brand Name</span>}
               value={formData.brandName}
-              onChange={(e: { target: { value: any; }; }) =>
+              onChange={(e: { target: { value: any } }) =>
                 setFormData({ ...formData, brandName: e.target.value })
               }
               className="text-white"
               disabled={!isEditing}
             />
             <Input
-              label={<span className="text-darklime dark:text-lime">Contact Number</span>}
+              label={<span className=" text-lime">Contact Number</span>}
               type="tel"
               value={formData.phone}
-              onChange={(e: { target: { value: any; }; }) =>
+              onChange={(e: { target: { value: any } }) =>
                 setFormData({ ...formData, phone: e.target.value })
               }
               className="text-white"
               disabled={!isEditing}
             />
             <Input
-              label={<span className="text-darklime dark:text-lime">GST Number</span>}
+              label={<span className=" text-lime">GST Number</span>}
               value={formData.gstNumber}
-              onChange={(e: { target: { value: any; }; }) =>
+              onChange={(e: { target: { value: any } }) =>
                 setFormData({ ...formData, gstNumber: e.target.value })
               }
               className="text-white"
               disabled={!isEditing}
             />
             <Input
-              label={<span className="text-darklime dark:text-lime">Bank Account Name</span>}
+              label={<span className=" text-lime">Bank Account Name</span>}
               value={formData.bankAccountName}
-              onChange={(e: { target: { value: any; }; }) =>
+              onChange={(e: { target: { value: any } }) =>
                 setFormData({ ...formData, bankAccountName: e.target.value })
               }
               className="text-white"
               disabled={!isEditing}
             />
             <Input
-              label={<span className="text-darklime dark:text-lime">Bank Account Number</span>}
+              label={<span className=" text-lime">Bank Account Number</span>}
               value={formData.bankAccount}
-              onChange={(e: { target: { value: any; }; }) =>
+              onChange={(e: { target: { value: any } }) =>
                 setFormData({ ...formData, bankAccount: e.target.value })
               }
               className="text-white"
               disabled={!isEditing}
             />
             <Input
-              label={<span className="text-darklime dark:text-lime">IFSC Code</span>}
+              label={<span className="  text-lime">IFSC Code</span>}
               value={formData.ifscCode}
-              onChange={(e: { target: { value: any; }; }) =>
+              onChange={(e: { target: { value: any } }) =>
                 setFormData({ ...formData, ifscCode: e.target.value })
               }
               className="text-white"
               disabled={!isEditing}
             />
             <div>
-              <div className="my-4 mx-1 text-darklime dark:text-lime">
+              <div className="my-4 mx-1 text-lime">
                 Logo
                 {profile.logo ? (
                   <img
@@ -266,50 +265,52 @@ export function ProfilePage() {
           <div className="mt-6">
             <button
               onClick={() => setShowUnavailableHours(!showUnavailableHours)}
-              className="flex items-center space-x-2 text-darklime dark:text-lime mb-2"
+              className="flex items-center space-x-2  text-lime mb-2"
             >
               <Clock className="h-5 w-5" />
               <span className="font-medium">
-                {showUnavailableHours ? 'Hide' : 'Show'} Unavailable Hours Settings
+                {showUnavailableHours ? "Hide" : "Show"} Unavailable Hours
+                Settings
               </span>
             </button>
 
             {showUnavailableHours && (
-              <div className="bg-lime-50 border border-darklime dark:border-hidden dark:bg-lightgray p-4 rounded-lg">
-                <h3 className="text-lg font-medium text-darklime dark:text-lime mb-3">
+              <div className="bg-lime-50 border border-darklime   border-hidden   bg-lightgray p-4 rounded-lg">
+                <h3 className="text-lg font-medium  text-lime mb-3">
                   Set Your Unavailable Hours
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-darklime dark:text-lime mb-1">
+                    <label className="block text-sm font-medium text-lime mb-1">
                       Start Time
                     </label>
                     <input
                       type="time"
                       value={unavailableHours.start}
-                      onChange={(e) => handleUnavailableHoursChange(e, 'start')}
-                      className="w-full p-2 rounded-xl dark:bg-darkgray dark:text-white"
+                      onChange={(e) => handleUnavailableHoursChange(e, "start")}
+                      className="w-full p-2 rounded-xl   bg-darkgray   text-white"
                       disabled={!isEditing}
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-darklime dark:text-lime mb-1">
+                    <label className="block text-sm font-medium text-lime mb-1">
                       End Time
                     </label>
                     <input
                       type="time"
                       value={unavailableHours.end}
-                      onChange={(e) => handleUnavailableHoursChange(e, 'end')}
-                      className="w-full p-2 rounded-xl dark:bg-darkgray dark:text-white"
+                      onChange={(e) => handleUnavailableHoursChange(e, "end")}
+                      className="w-full p-2 rounded-xl   bg-darkgray   text-white"
                       disabled={!isEditing}
                     />
                   </div>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  During these hours, your account will not be available for booking.
+                <p className="text-sm text-gray-400 mt-2">
+                  During these hours, your account will not be available for
+                  booking.
                 </p>
-                <p className="text-sm font-medium text-darklime dark:text-lime mt-2">
-                  Current setting: Unavailable from {unavailableHours.start} to{' '}
+                <p className="text-sm font-medium text-lime mt-2">
+                  Current setting: Unavailable from {unavailableHours.start} to{" "}
                   {unavailableHours.end}
                 </p>
               </div>
@@ -319,11 +320,11 @@ export function ProfilePage() {
           {/* Cities Operated Section */}
           <div className="mt-6">
             <div>
-              <label className="block text-sm font-medium text-darklime dark:text-lime m-1">
+              <label className="block text-sm font-medium text-lime m-1">
                 Cities Operated
               </label>
               {isEditing && (
-                <div className="flex gap-2 my-4 dark:text-white">
+                <div className="flex gap-2 my-4   text-white">
                   <button
                     className="bg-lime rounded-full p-1"
                     onClick={addMoreCities}
@@ -341,9 +342,11 @@ export function ProfilePage() {
                   className="px-3 py-2 bg-lime rounded-full flex justify-between text-sm"
                 >
                   {city}
-                  {isEditing && <button onClick={()=>deleteCity(city)}>
-                    <Trash className="dark:text-darkgray"/>
-                  </button>}
+                  {isEditing && (
+                    <button onClick={() => deleteCity(city)}>
+                      <Trash className=" text-darkgray" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -356,10 +359,10 @@ export function ProfilePage() {
                   type="text"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  className="mt-1 pl-3 block border text-white border-gray-500 rounded-2xl p-2 dark:bg-lightgray dark:border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
+                  className="mt-1 pl-3 block border text-white rounded-2xl p-2   bg-lightgray   border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
                   placeholder="Search cities..."
                 />
-                <div className="absolute left-0 bg-white/90 w-full mt-1 dark:bg-lightgray border dark:text-white border-lime rounded-2xl shadow-lg max-h-60 overflow-y-auto z-50">
+                <div className="absolute left-0 bg-white/90 w-full mt-1   bg-lightgray border   text-white border-lime rounded-2xl shadow-lg max-h-60 overflow-y-auto z-50">
                   <div className="max-h-48 overflow-y-auto">
                     {filteredCities.map((city) => (
                       <div

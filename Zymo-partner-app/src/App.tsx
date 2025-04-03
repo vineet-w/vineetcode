@@ -7,7 +7,6 @@ import { ProfilePage } from './pages/ProfilePage';
 import { UploadLogoPage } from './pages/UploadLogoPage';
 import { UploadCarPage } from './pages/UploadCarPage';
 import { Layout } from './components/Layout'; 
-import Public from './pages/Public';
 import AdminPage from './pages/AdminPage';
 import Bookings from './pages/Bookings';
 
@@ -25,7 +24,6 @@ function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/upload-logo" element={<UploadLogoPage />} />
           <Route path="/upload-car" element={<UploadCarPage />} />
-          <Route path="/public" element={<Public />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/bookings" element={<Bookings />} />
         </Route>

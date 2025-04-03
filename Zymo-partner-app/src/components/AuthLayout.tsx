@@ -11,7 +11,7 @@ export function AuthLayout({ children, title }: AuthLayoutProps) {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Car className="h-12 w-12 text-yellow-400" />
+          <Car className="h-12 w-12 text-lime" />
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-darkgray">{title}</h2>
       </div>

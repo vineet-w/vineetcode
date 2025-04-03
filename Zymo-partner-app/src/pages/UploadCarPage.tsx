@@ -5,7 +5,7 @@ import { Car as CarIcon, Upload, X } from "lucide-react";
 
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
-import { updateDoc, setDoc } from "firebase/firestore";
+import { updateDoc, setDoc, Firestore } from "firebase/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../lib/firebase"; // Import Firebase Firestore instance
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -34,6 +34,9 @@ export function UploadCarPage() {
   const [formData, setFormData] = useState({
     carBrand: "",
     carName: "", //car name
+    vendorBrandName: "",
+    vendorLogo: "",
+    vendorFullName:"",
     cities: [] as string[], //cities in which the car is available
     pickupLocations: {} as { [key: string]: string }, //contains cities and their respective pickup location in pairs
     securityDeposit: "",
@@ -148,10 +151,27 @@ export function UploadCarPage() {
 
   useEffect(() => {
     // Use Firebase's auth state observer instead of just checking currentUser once
-    const unsubscribe = auth.onAuthStateChanged((user) => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user) {
         // User is signed in
-        const userId = uid || user.uid;
+        try {
+          const userId = uid || user.uid;
+          const userDocRef = doc(db, "partnerWebApp", userId);
+          const userDoc = await getDoc(userDocRef);
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setFormData((prev) => ({
+              ...prev,
+              vendorBrandName: userData?.brandName || "",
+              vendorLogo: userData?.logo || "",
+              vendorFullName: userData?.fullName || "",
+            }));
+          }
+          setError(null);
+        } catch (err) {
+          console.error("Error fetching vendor details:", err);
+          setError("Failed to load vendor information");
+        }
 
         setError(null);
       } else {
@@ -161,7 +181,6 @@ export function UploadCarPage() {
       }
     });
 
-    // Clean up the listener when component unmounts
     return () => unsubscribe();
   }, []); // Empty dependency array as we want this to run once when component mounts
 
@@ -376,10 +395,10 @@ export function UploadCarPage() {
   }, []);
 
   return (
-    <div className="bg-lime rounded-2xl dark:bg-transparent">
+    <div className="bg-lime rounded-2xl   bg-transparent">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div
-          className={`dark:bg-darkgray bg-white rounded-3xl shadow-lg p-6 border border-lime transition-all duration-1000 ease-in-out
+          className={`  bg-darkgray rounded-3xl shadow-lg p-6 border border-lime transition-all duration-1000 ease-in-out
             ${
               showForm
                 ? "opacity-100 translate-y-0"
@@ -387,10 +406,10 @@ export function UploadCarPage() {
             }`}
         >
           <div className="flex items-center space-x-4 mb-8">
-            <div className="bg-lime/40 dark:bg-lime p-3 rounded-full">
+            <div className="bg-lime/40   bg-lime p-3 rounded-full">
               <CarIcon className="h-6 w-6 text-darklime/90" />
             </div>
-            <h1 className="text-3xl font-bold text-darklime dark:text-lime">
+            <h1 className="text-3xl font-bold text-lime">
               {isEditMode ? "Edit Car Details" : "Upload Car Details"}
             </h1>
           </div>
@@ -432,7 +451,7 @@ export function UploadCarPage() {
 
               {/* Image Upload */}
               <div className="py-2">
-                <label className="block text-sm text-gray-700 mx-1 font-medium dark:text-white mb-3">
+                <label className="block text-sm mx-1 font-medium   text-white mb-3">
                   Car Images (Max 5)
                 </label>
                 <div
@@ -442,7 +461,7 @@ export function UploadCarPage() {
                   ${
                     imageFiles.length >= 5
                       ? "opacity-50 cursor-not-allowed"
-                      : "hover:border-darklime dark:hover:border-lime"
+                      : " hover:border-lime"
                   }
                 `}
                 >
@@ -451,10 +470,10 @@ export function UploadCarPage() {
                     disabled={imageFiles.length >= 5}
                   />
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                  <p className="mt-2 text-sm dark:text-gray-300">
+                  <p className="mt-2 text-sm   text-gray-300">
                     Drag and drop images here, or click to select files
                   </p>
-                  <p className="text-xs dark:text-gray-300 mt-1">
+                  <p className="text-xs   text-gray-300 mt-1">
                     Supports: JPG, PNG, GIF (Max size: 5MB each)
                   </p>
                 </div>
@@ -483,7 +502,7 @@ export function UploadCarPage() {
 
               {/* Cities and Pickup Locations */}
               <div className="">
-                <label className="block text-sm px-1 font-medium text-gray-700 dark:text-white mb-3">
+                <label className="block text-sm px-1 font-medium   text-white mb-3">
                   Cities Available
                 </label>
 
@@ -495,7 +514,7 @@ export function UploadCarPage() {
                     value={formData.cities.join(", ")}
                     readOnly
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="mt-1 dark:text-white pl-3 block w-full border border-gray-500 rounded-2xl p-2 dark:bg-lightgray dark:border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
+                    className="mt-1   text-white pl-3 block w-full border rounded-2xl p-2   bg-lightgray   border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
                     placeholder="Select cities..."
                   />
 
@@ -503,14 +522,14 @@ export function UploadCarPage() {
                   {isDropdownOpen && (
                     <div
                       ref={dropdownRef}
-                      className="absolute left-0 w-full mt-1 bg-white border border-lime rounded-2xl shadow-lg max-h-60 overflow-y-auto dark:bg-lightgray z-10"
+                      className="absolute left-0 w-full mt-1 border border-lime rounded-2xl shadow-lg max-h-60 overflow-y-auto   bg-lightgray z-10"
                     >
                       <input
                         type="text"
                         placeholder="Search cities..."
                         value={searchTerm}
                         onChange={handleSearchChange}
-                        className="w-full p-2 border-b border-b-lime border-gray-300 dark:bg-lightgray dark:text-white focus:ring-lime"
+                        className="w-full p-2 border-b border-b-lime border-gray-300   bg-lightgray   text-white focus:ring-lime"
                       />
                       <div className="max-h-48 overflow-y-auto">
                         {filteredCities.map((city) => (
@@ -519,7 +538,7 @@ export function UploadCarPage() {
                             className="flex items-center space-x-2 p-2 hover:bg-lime/30 cursor-pointer"
                             onClick={() => handleSelectChange(city)}
                           >
-                            <span className="text-sm dark:text-gray-300">
+                            <span className="text-sm   text-gray-300">
                               {city}
                             </span>
                           </div>
@@ -534,12 +553,10 @@ export function UploadCarPage() {
                   {formData.cities.map((city) => (
                     <div
                       key={city}
-                      className="bg-gray-100 dark:bg-black/20 p-3 rounded-2xl"
+                      className="bg-gray-100   bg-black/20 p-3 rounded-2xl"
                     >
                       <div className="flex justify-between items-center mb-2">
-                        <span className="font-medium dark:text-white">
-                          {city}
-                        </span>
+                        <span className="font-medium   text-white">{city}</span>
                         <button
                           type="button"
                           onClick={() => handleSelectChange(city)}
@@ -557,7 +574,7 @@ export function UploadCarPage() {
                         }
                       />
                       {formData.pickupLocations[city] && (
-                        <p className="ml-1 dark:text-white text-sm mt-1">
+                        <p className="ml-1   text-white text-sm mt-1">
                           Selected Pickup Location:{" "}
                           {formData.pickupLocations[city]}
                         </p>
@@ -583,7 +600,7 @@ export function UploadCarPage() {
               {/* Car Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="mx-1 block text-sm font-medium text-gray-700 dark:text-white mb-3">
+                  <label className="mx-1 block text-sm font-medium  text-white mb-3">
                     Year of Registration
                   </label>
                   <select
@@ -596,7 +613,7 @@ export function UploadCarPage() {
                           : null, // Store as number or null
                       })
                     }
-                    className="mt-1 block w-full rounded-2xl border border-lightgray p-2 dark:bg-lightgray dark:text-white shadow-sm focus:border-lime focus:ring-lime"
+                    className="mt-1 block w-full rounded-2xl border border-lightgray p-2   bg-lightgray   text-white shadow-sm focus:border-lime focus:ring-lime"
                   >
                     <option value="">Select year</option> {/* Empty option */}
                     {Array.from(
@@ -611,7 +628,7 @@ export function UploadCarPage() {
                 </div>
 
                 <div>
-                  <label className="mx-1 block text-sm dark:text-white font-medium text-gray-700 mb-3">
+                  <label className="mx-1 block text-sm   text-white font-medium mb-3">
                     Fuel Type
                   </label>
                   <select
@@ -622,7 +639,7 @@ export function UploadCarPage() {
                         fuelType: e.target.value,
                       })
                     }
-                    className="mt-1 block w-full rounded-2xl p-2 dark:text-white dark:bg-lightgray border border-lightgray shadow-sm "
+                    className="mt-1 block w-full rounded-2xl p-2   text-white   bg-lightgray border border-lightgray shadow-sm "
                   >
                     {FUEL_TYPES.map((type) => (
                       <option key={type} value={type} className="rounded-2xl">
@@ -633,7 +650,7 @@ export function UploadCarPage() {
                 </div>
 
                 <div>
-                  <label className="block mx-1 dark:text-white text-sm font-medium text-gray-700 mb-3">
+                  <label className="block mx-1   text-white text-sm font-medium mb-3">
                     Car Type
                   </label>
                   <select
@@ -644,7 +661,7 @@ export function UploadCarPage() {
                         carType: e.target.value,
                       })
                     }
-                    className="mt-1 block w-full border border-lightgray rounded-2xl p-2 dark:bg-lightgray dark:text-white  shadow-sm focus:border-lime focus:ring-lime"
+                    className="mt-1 block w-full border border-lightgray rounded-2xl p-2   bg-lightgray   text-white  shadow-sm focus:border-lime focus:ring-lime"
                   >
                     {CAR_TYPES.map((type) => (
                       <option key={type} value={type}>
@@ -655,7 +672,7 @@ export function UploadCarPage() {
                 </div>
 
                 <div>
-                  <label className="block mx-1 text-sm font-medium text-gray-700 mb-3 dark:text-white">
+                  <label className="block mx-1 text-sm font-medium mb-3   text-white">
                     Transmission Type
                   </label>
                   <select
@@ -666,7 +683,7 @@ export function UploadCarPage() {
                         transmissionType: e.target.value,
                       })
                     }
-                    className="mt-1 block w-full border border-lightgray rounded-2xl p-2 dark:bg-lightgray dark:text-white shadow-sm "
+                    className="mt-1 block w-full border border-lightgray rounded-2xl p-2   bg-lightgray   text-white shadow-sm "
                   >
                     {TRANSMISSION_TYPES.map((type) => (
                       <option key={type} value={type}>
@@ -696,7 +713,7 @@ export function UploadCarPage() {
               {/* Unit Selection */}
               <div className="flex flex-col">
                 <div className="flex space-x-4 ml-1">
-                  <label className="flex items-center dark:text-white">
+                  <label className="flex items-center   text-white">
                     <input
                       type="radio"
                       name="unit"
@@ -713,7 +730,7 @@ export function UploadCarPage() {
                     Hours
                   </label>
 
-                  <label className="flex items-center dark:text-white">
+                  <label className="flex items-center   text-white">
                     <input
                       type="radio"
                       name="unit"
@@ -730,14 +747,14 @@ export function UploadCarPage() {
                     Days
                   </label>
                 </div>
-                <p className=" m-1 text-gray-600 dark:text-gray-300 mt-2">
+                <p className=" m-1  text-gray-300 mt-2">
                   Selected Duration: {formData.minBookingDuration}{" "}
                   {formData.unit}
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                   {/* Number of Seats */}
                   <div>
-                    <label className="block mx-1 text-sm font-medium text-gray-700 mb-3 dark:text-white">
+                    <label className="block mx-1 text-sm font-medium mb-3   text-white">
                       Number of Seats
                     </label>
                     <select
@@ -748,7 +765,7 @@ export function UploadCarPage() {
                           noOfSeats: Number(e.target.value),
                         })
                       }
-                      className="mt-1 block w-full border border-lightgray rounded-2xl p-2 dark:bg-lightgray dark:text-white shadow-sm focus:border-lime focus:ring-lime"
+                      className="mt-1 block w-full border border-lightgray rounded-2xl p-2   bg-lightgray   text-white shadow-sm focus:border-lime focus:ring-lime"
                     >
                       {[3, 4, 5, 6, 7, 8, 9].map((seats) => (
                         <option key={seats} value={seats}>
@@ -775,7 +792,7 @@ export function UploadCarPage() {
                       }}
                       className="rounded border-gray-300"
                     />
-                    <label className="text-sm flex gap-2 font-medium dark:text-white text-gray-700">
+                    <label className="text-sm flex gap-2 font-medium   text-white">
                       Slab-wise Rates <b className="text-red-500">(₹/hr)</b>
                       <span>(Rate per hour)</span>
                     </label>
@@ -812,7 +829,7 @@ export function UploadCarPage() {
                 {/* Fixed Hourly Rate Section */}
                 <div className="space-y-4 mt-6">
                   <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium dark:text-white text-gray-700">
+                    <label className="text-sm font-medium   text-white ">
                       Hourly Rate (₹/hr){" "}
                       <b className="text-red-500">
                         (including GST & Zymo Commission)
@@ -826,7 +843,7 @@ export function UploadCarPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Limit Type Dropdown */}
                     <div>
-                      <label className="mx-1 block text-sm font-medium dark:text-white text-gray-700 mb-4">
+                      <label className="mx-1 block text-sm font-medium   text-white mb-4">
                         Limit Type
                       </label>
                       <select
@@ -852,7 +869,7 @@ export function UploadCarPage() {
                           };
                           setFormData(updatedFormData);
                         }}
-                        className="mt-1 block p-2 border border-gray-700 dark:bg-lightgray dark:text-white w-full rounded-2xl shadow-sm"
+                        className="mt-1 block p-2 border border-gray-700   bg-lightgray   text-white w-full rounded-2xl shadow-sm"
                       >
                         <option value="Limit Type">Limit Type</option>
                         <option value="Limited">Limited</option>
@@ -1100,7 +1117,7 @@ export function UploadCarPage() {
                     }
                     className="rounded border-gray-300 text-yellow-400 focus:ring-yellow-500"
                   />
-                  <label className="text-sm font-medium dark:text-white text-gray-700">
+                  <label className="text-sm font-medium   text-white">
                     Monthly Rental Prices ( 30 Days ){" "}
                     <b className=" text-red-500">
                       {" "}
@@ -1113,7 +1130,7 @@ export function UploadCarPage() {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="mx-1 block text-sm font-medium dark:text-white text-gray-700 mb-4">
+                        <label className="mx-1 block text-sm font-medium   text-white  mb-4">
                           Limit Type
                         </label>
                         <select
@@ -1139,7 +1156,7 @@ export function UploadCarPage() {
                             };
                             setFormData(updatedFormData);
                           }}
-                          className="mt-1 block p-2 border border-gray-700 dark:bg-lightgray dark:text-white w-full rounded-2xl shadow-sm"
+                          className="mt-1 block p-2 border border-gray-700   bg-lightgray   text-white w-full rounded-2xl shadow-sm"
                         >
                           <option value="Type">Limit Type</option>
                           <option value="Limited">Limited</option>
@@ -1388,7 +1405,7 @@ export function UploadCarPage() {
                     }
                     className="rounded border-gray-300 text-yellow-400 focus:ring-yellow-500"
                   />
-                  <label className="text-sm font-medium dark:text-white text-gray-700">
+                  <label className="text-sm font-medium   text-white">
                     Weekly Rental Prices ( 30 Days ){" "}
                     <b className=" text-red-500">
                       {" "}
@@ -1401,7 +1418,7 @@ export function UploadCarPage() {
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="mx-1 block text-sm font-medium dark:text-white text-gray-700 mb-4">
+                        <label className="mx-1 block text-sm font-medium   text-white mb-4">
                           Limit Type
                         </label>
                         <select
@@ -1427,7 +1444,7 @@ export function UploadCarPage() {
                             };
                             setFormData(updatedFormData);
                           }}
-                          className="mt-1 block p-2 border border-gray-700 dark:bg-lightgray dark:text-white w-full rounded-2xl shadow-sm"
+                          className="mt-1 block p-2 border border-gray-700   bg-lightgray   text-white w-full rounded-2xl shadow-sm"
                         >
                           <option value="Type">Limit Type</option>
                           <option value="Limited">Limited</option>
@@ -1677,7 +1694,7 @@ export function UploadCarPage() {
                     }
                     className="rounded border-gray-300 "
                   />
-                  <label className="text-sm font-medium dark:text-white text-gray-700">
+                  <label className="text-sm font-medium   text-white text-gray-700">
                     Home Delivery/Pickup Prices{" "}
                     <b className=" text-red-500">
                       {" "}
@@ -1688,7 +1705,7 @@ export function UploadCarPage() {
 
                 {formData.deliveryCharges.enabled && (
                   <div>
-                    <div className="m-2 dark:text-gray-400">
+                    <div className="m-2   text-gray-400">
                       Specify the home delivery charges for different distance
                       ranges.
                     </div>
@@ -1771,7 +1788,7 @@ export function UploadCarPage() {
               </Button>
               <Button
                 type="submit"
-                className="w-full bg-lime text-black dark:text-black hover:bg-lime/70"
+                className="w-full bg-lime text-black hover:bg-lime/70"
                 isLoading={isSubmitting}
               >
                 {isEditMode ? "Save Changes" : "Upload Car"}

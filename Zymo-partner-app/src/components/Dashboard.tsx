@@ -52,23 +52,23 @@ export function Dashboard({ isOpen, onClose }: DashboardProps) {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 w-64 bg-white dark:bg-lightgray transform ${
+        className={`fixed inset-y-0 left-0 w-64 bg-lightgray transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } transition-transform duration-300 ease-in-out z-50 `}
       >
         <div className="h-full flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+          <div className="flex items-center justify-between p-4 border-b   border-gray-700">
             <div className="flex items-center space-x-2">
-              <Car className="h-6 w-6 text-darklime dark:text-lime" />
-              <span className="text-lg font-bold font-quicksand text-[#94C748] dark:text-lime">
+              <Car className="h-6 w-6 text-lime" />
+              <span className="text-lg font-bold font-quicksand text-lime">
                 Zymo Partner
               </span>
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 "
+              className="p-2 rounded-md  hover:bg-gray-700 "
             >
-              <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+              <X className="h-5 w-5 text-gray-400" />
             </button>
           </div>
 
@@ -80,7 +80,7 @@ export function Dashboard({ isOpen, onClose }: DashboardProps) {
                   item.onClick();
                   onClose(); // Close sidebar after item click
                 }}
-                className="flex items-center w-full px-4 py-3 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="flex items-center w-full px-4 py-3    text-gray-300 rounded-xl  hover:bg-darkgray"
               >
                 <item.icon className="h-5 w-5 mr-3" />
                 {item.label}

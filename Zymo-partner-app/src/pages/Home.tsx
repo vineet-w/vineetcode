@@ -296,18 +296,16 @@ export function Home() {
   };
 
   return (
-    <div className="dark:bg-darkgray">
+    <div className="  bg-darkgray">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Show loading text until data is ready */}
         {loading ? (
-          <div className="text-center text-lightgray dark:text-gray-100 text-xl">
-            Loading...
-          </div>
+          <div className="text-center text-gray-100 text-xl">Loading...</div>
         ) : (
           <>
             {/* Greeting Section */}
             <div className="text-center mb-6">
-              <h1 className="text-2xl font-semibold text-lightgray dark:text-gray-100">
+              <h1 className="text-2xl font-semibold text-gray-100">
                 {userEmail ? `Welcome, ${userEmail}!` : "Welcome!"}
               </h1>
             </div>
@@ -323,7 +321,7 @@ export function Home() {
                 return (
                   <div
                     key={car.id}
-                    className="bg-white dark:bg-lightgray rounded-2xl shadow-lg overflow-hidden hover:shadow-custom-even hover:shadow-lime transition duration-300 ease-in-out hover:scale-100"
+                    className="bg-lightgray rounded-2xl shadow-lg overflow-hidden hover:shadow-custom-even hover:shadow-lime transition duration-300 ease-in-out hover:scale-100"
                   >
                     {/* Image Gallery (unchanged) */}
                     <div className="img-container relative w-full overflow-hidden rounded-2xl">
@@ -370,27 +368,27 @@ export function Home() {
 
                     <div className="p-4">
                       <div className="flex gap-1">
-                        <h2 className="text-xl font-semibold text-lightgray dark:text-gray-100">
+                        <h2 className="text-xl font-semibold  text-gray-100">
                           {car.carBrand}
                         </h2>
-                        <h2 className="text-xl font-semibold text-lightgray dark:text-gray-100">
+                        <h2 className="text-xl font-semibold  text-gray-100">
                           {car.carName}
                         </h2>
                       </div>
 
-                      <p className="flex gap-1 my-2 text-gray-600 dark:text-gray-300">
+                      <p className="flex gap-1 my-2  text-gray-300">
                         <MapPinIcon />
                         {car.cities.join(", ")}
                       </p>
 
                       {/* Display pricing information */}
                       <div className="space-y-1">
-                        <p className="m-1 text-gray-600 dark:text-white">
+                        <p className="m-1  text-white">
                           Hourly Rate: ₹ {displayPrice}
                         </p>
 
                         {car.hourlyRental.limited && (
-                          <p className="m-1 text-sm dark:text-gray-300">
+                          <p className="m-1 text-sm   text-gray-300">
                             {car.hourlyRental.limited.packages[0]?.kmPerHour ||
                               "N/A"}{" "}
                             km/hour
@@ -400,19 +398,19 @@ export function Home() {
 
                       {/* Car specifications */}
                       <div className="space-y-1 mt-2">
-                        <p className="m-1 dark:text-white">
+                        <p className="m-1   text-white">
                           Type: {car.carType} | {car.fuelType} |{" "}
                           {car.transmissionType}
                         </p>
-                        <p className="m-1 dark:text-white">
+                        <p className="m-1   text-white">
                           Seats: {car.noOfSeats} | Year of Reg.:{" "}
                           {car.yearOfRegistration || "N/A"}
                         </p>
-                        <p className="m-1 dark:text-white">
+                        <p className="m-1   text-white">
                           Min. Booking: {car.minBookingDuration} {car.unit}
                         </p>
 
-                        <p className="m-1 dark:text-white">
+                        <p className="m-1   text-white">
                           Unavailable: {car.unavailableHours.start} to{" "}
                           {car.unavailableHours.end}
                         </p>
@@ -432,7 +430,7 @@ export function Home() {
                       <div className="mt-4">
                         <button
                           onClick={() => openModal(car)}
-                          className="border border-darklime dark:border-lime px-4 py-2 rounded-2xl dark:text-white"
+                          className="border border-lime px-4 py-2 rounded-2xl  text-white"
                         >
                           Set Unavailable Dates
                         </button>
@@ -460,11 +458,11 @@ export function Home() {
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && carToDelete && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                <div className="bg-white dark:bg-lightgray p-6 rounded-lg shadow-lg w-96">
-                  <h3 className="text-lg font-semibold dark:text-white mb-2">
+                <div className="  bg-lightgray p-6 rounded-lg shadow-lg w-96">
+                  <h3 className="text-lg font-semibold   text-white mb-2">
                     Confirm Deletion
                   </h3>
-                  <p className="mb-4 dark:text-gray-400 text-gray-800">
+                  <p className="mb-4   text-gray-400">
                     Are you sure you want to delete the car "
                     {carToDelete.carName}
                     "? This action cannot be undone.
@@ -490,11 +488,11 @@ export function Home() {
             {/* Unavailable Dates Modal */}
             {isModalOpen && selectedCar && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                <div className="bg-white dark:bg-lightgray p-6 rounded-lg shadow-lg w-96">
-                  <h3 className="text-lg dark:text-white mb-2">
+                <div className="bg-lightgray p-6 rounded-lg shadow-lg w-96">
+                  <h3 className="text-lg   text-white mb-2">
                     Select Unavailable Dates
                   </h3>
-                  <p className="mb-4 dark:text-gray-400 text-gray-800">
+                  <p className="mb-4 text-gray-400">
                     Mark dates when your car is unavailable for booking
                   </p>
                   {/* Save message display */}
@@ -509,7 +507,7 @@ export function Home() {
                       {saveMessage}
                     </div>
                   )}
-                  <div className="flex justify-center dark:text-white">
+                  <div className="flex justify-center   text-white">
                     <DayPicker
                       mode="multiple"
                       selected={selectedDates.map((date) => new Date(date))}
