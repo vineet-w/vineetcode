@@ -36,6 +36,7 @@ export function UploadCarPage() {
     carName: "", //car name
     vendorBrandName: "",
     vendorLogo: "",
+    vendorFullName:"",
     cities: [] as string[], //cities in which the car is available
     pickupLocations: {} as { [key: string]: string }, //contains cities and their respective pickup location in pairs
     securityDeposit: "",
@@ -163,8 +164,8 @@ export function UploadCarPage() {
               ...prev,
               vendorBrandName: userData?.brandName || "",
               vendorLogo: userData?.logo || "",
+              vendorFullName: userData?.fullName || "",
             }));
-            console.log(userData);
           }
           setError(null);
         } catch (err) {
