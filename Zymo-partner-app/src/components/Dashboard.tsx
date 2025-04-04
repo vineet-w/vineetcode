@@ -1,15 +1,14 @@
-import { useNavigate } from 'react-router-dom';
-import { User, Image, LogOut, Car, X } from 'lucide-react';
-import { signOut } from 'firebase/auth';
-import { auth } from '../lib/firebase';
-import { useDispatch } from 'react-redux';
-import { resetProfile } from '../store/slices/profileSlice';
+import { useNavigate } from "react-router-dom";
+import { User, Image, LogOut, Car, X } from "lucide-react";
+import { signOut } from "firebase/auth";
+import { auth } from "../lib/firebase";
+import { useDispatch } from "react-redux";
+import { resetProfile } from "../store/slices/profileSlice";
 
 interface DashboardProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
 
 export function Dashboard({ isOpen, onClose }: DashboardProps) {
   const navigate = useNavigate();
@@ -19,25 +18,25 @@ export function Dashboard({ isOpen, onClose }: DashboardProps) {
     try {
       dispatch(resetProfile());
       await signOut(auth);
-      navigate('/auth');
+      navigate("/auth");
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
     }
   };
 
   const menuItems = [
-    { icon: User, label: 'Profile', onClick: () => navigate('/profile') },
+    { icon: User, label: "Profile", onClick: () => navigate("/profile") },
     {
       icon: Image,
-      label: 'Upload Logo',
-      onClick: () => navigate('/upload-logo'),
+      label: "Upload Logo",
+      onClick: () => navigate("/upload-logo"),
     },
     {
       icon: Car,
-      label: 'Upload Car Details',
-      onClick: () => navigate('/upload-car'),
+      label: "Upload Car Details",
+      onClick: () => navigate("/upload-car"),
     },
-    { icon: LogOut, label: 'Sign Out', onClick: handleLogout },
+    { icon: LogOut, label: "Sign Out", onClick: handleLogout },
   ];
 
   return (
@@ -53,11 +52,11 @@ export function Dashboard({ isOpen, onClose }: DashboardProps) {
       {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 w-64 bg-lightgray transform ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+          isOpen ? "translate-x-0" : "-translate-x-full"
         } transition-transform duration-300 ease-in-out z-50 `}
       >
         <div className="h-full flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b   border-gray-700">
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
             <div className="flex items-center space-x-2">
               <Car className="h-6 w-6 text-lime" />
               <span className="text-lg font-bold font-quicksand text-lime">
@@ -66,7 +65,7 @@ export function Dashboard({ isOpen, onClose }: DashboardProps) {
             </div>
             <button
               onClick={onClose}
-              className="p-2 rounded-md  hover:bg-gray-700 "
+              className="p-2 rounded-xl hover:bg-darkgray "
             >
               <X className="h-5 w-5 text-gray-400" />
             </button>
@@ -80,7 +79,7 @@ export function Dashboard({ isOpen, onClose }: DashboardProps) {
                   item.onClick();
                   onClose(); // Close sidebar after item click
                 }}
-                className="flex items-center w-full px-4 py-3    text-gray-300 rounded-xl  hover:bg-darkgray"
+                className="flex items-center w-full px-4 py-3 text-gray-300 rounded-xl  hover:bg-darkgray"
               >
                 <item.icon className="h-5 w-5 mr-3" />
                 {item.label}
