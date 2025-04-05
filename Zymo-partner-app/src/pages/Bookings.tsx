@@ -1,21 +1,22 @@
-// src/pages/Bookings.tsx (or your equivalent path)
-import { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux'; // Import useSelector
-import { getFirestore, collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-import { app } from '../lib/firebase'; // Adjust your firebase config import path
-import { RootState } from '../store/store'; // Import RootState from your store configuration
+import { app } from '../lib/firebase';
+import { RootState } from '../store/store';
+import { FiSearch, FiCalendar, FiClock, FiDollarSign, FiFilter, FiChevronDown, FiChevronUp, FiInfo, FiPhone, FiMail, FiMapPin, FiPackage, FiEdit } from 'react-icons/fi';
+import { Car } from 'lucide-react';
 
-// Define the Booking interface based on the provided fields
 interface Booking {
+    id: string; // Firestore document ID
     Balance: string;
     Cancelled: boolean;
     CarImage: string;
     CarName: string;
     City: string;
     DateOfBirth: string;
-    DateOfBooking: number; // Firestore timestamp stored as number (milliseconds)
-    'Discount applied by user'?: number; // Optional field
+    DateOfBooking: number;
+    'Discount applied by user'?: number;
     Documents?: {
         LicenseBack: string | null;
         LicenseFront: string | null;
@@ -33,172 +34,656 @@ interface Booking {
     'Pickup Location': string;
     'Promo Code Used': string;
     RefundData?: {
-        'Booking Cancelled'?: string; // Optional within map
-        SecurityDeposit?: number; // Optional within map
+        'Booking Cancelled'?: string;
+        SecurityDeposit?: number;
     };
     StartDate: string;
     StartTime: string;
     Street1: string;
     Street2: string;
-    TimeStamp: string; // This seems like a pre-formatted string timestamp
+    TimeStamp: string;
     Transmission: string;
     UserId: string;
-    Vendor: string; // This field will be used for matching
+    Vendor: string;
     Zipcode: string;
     actualPrice: number;
-    bookingId: string; // Use this as the key
+    bookingId: string;
     deliveryType: string;
     paymentId: string;
-    price: string; // Note: Price is a string in the example data
-    refundTimestamp?: string; // Optional field
-    // Add id if you want to store the document ID itself
-    id?: string;
+    price: string;
+    refundTimestamp?: string;
+    status?: 'pending' | 'accepted' | 'rejected';
+    rejectionReason?: string;
 }
 
-const Bookings = () => {
+type BookingFilter = 'upcoming' | 'active' | 'past' | 'all';
+type SortOption = 'newest' | 'oldest' | 'price-high' | 'price-low' | 'name-asc' | 'name-desc';
+
+const parseBookingDateTime = (dateStr: string, timeStr: string): Date | null => {
+    try {
+        const isoDate = new Date(`${dateStr}T${timeStr}`);
+        if (!isNaN(isoDate.getTime())) return isoDate;
+
+        const formats = [
+            { regex: /^(\d{2})\/(\d{2})\/(\d{4})$/, timeSplit: ':' },
+            { regex: /^(\d{2}) (\w{3}), (\d{4})$/, timeSplit: /[: ]/ }
+        ];
+
+        for (const format of formats) {
+            const match = dateStr.match(format.regex);
+            if (match) {
+                const [_, day, month, year] = match;
+                const timeParts = timeStr.split(format.timeSplit);
+                const hours = parseInt(timeParts[0]) + (timeStr.includes('PM') && timeParts[0] !== '12' ? 12 : 0);
+                const minutes = parseInt(timeParts[1]) || 0;
+
+                const monthNum = format.regex.toString().includes('\\w{3}') 
+                    ? new Date(`${month} 1, 2023`).getMonth() 
+                    : parseInt(month) - 1;
+
+                return new Date(parseInt(year), monthNum, parseInt(day), hours, minutes);
+            }
+        }
+
+        console.warn(`Unrecognized date/time format: ${dateStr} ${timeStr}`);
+        return null;
+    } catch (error) {
+        console.error(`Error parsing date/time: ${dateStr} ${timeStr}`, error);
+        return null;
+    }
+};
+
+ 
+
+const Bookings: React.FC = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [activeFilter, setActiveFilter] = useState<BookingFilter>('active');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [sortOption, setSortOption] = useState<SortOption>('newest');
+    const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null);
+    const [rejectionReason, setRejectionReason] = useState('');
+    const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
+    const [editingStatus, setEditingStatus] = useState<string | null>(null);
+
     const db = getFirestore(app);
     const auth = getAuth();
-
-    // Get profile state from Redux store
     const profile = useSelector((state: RootState) => state.profile);
-    const vendorBrandName = profile.brandName;  // Access brandName safely
+    const vendorBrandName = profile.brandName;
 
     useEffect(() => {
         const fetchVendorBookings = async () => {
-            // Wait until profile data (including brandName) is loaded and user is authenticated
-            if (profile.loading || !vendorBrandName) {
-                 // Keep showing loading or a specific message if brandName isn't ready
-                 // Don't set error here, just wait for data
-                 setLoading(true);
-                 setError(''); // Clear any previous error
-                 return;
+            if (profile.loading) {
+                setLoading(true);
+                return;
             }
-
-            const user = auth.currentUser;
-            if (!user) {
-                setError('User not authenticated');
+            
+            if (!vendorBrandName) {
+                setError('Vendor details (Brand Name) not found in profile.');
                 setLoading(false);
                 return;
             }
 
-            setLoading(true); // Ensure loading is true before starting async fetch
-            setError(''); // Clear previous errors
+            if (!auth.currentUser) {
+                setError('User not authenticated.');
+                setLoading(false);
+                return;
+            }
 
             try {
-                // Query the 'CarsPaymentSuccessDetails' collection
                 const q = query(
                     collection(db, 'CarsPaymentSuccessDetails'),
-                    // Filter where the 'Vendor' field matches the logged-in user's brandName
                     where('Vendor', '==', vendorBrandName)
                 );
-
-                const querySnapshot = await getDocs(q);
-                const vendorBookings: Booking[] = [];
-
-                querySnapshot.forEach((doc) => {
-                    // Push data, casting to the Booking interface and adding the doc ID
-                    vendorBookings.push({ id: doc.id, ...doc.data() } as Booking);
-                });
-
+                const snapshot = await getDocs(q);
+                const vendorBookings = snapshot.docs.map(doc => ({
+                    id: doc.id, // Firestore document ID
+                    status: doc.data().status || 'pending',
+                    ...doc.data()
+                } as Booking));
                 setBookings(vendorBookings);
-
             } catch (err: any) {
-                console.error("Error fetching bookings:", err);
-                setError(`Error fetching bookings: ${err.message || 'Unknown error'}`);
+                setError(`Failed to fetch bookings: ${err.message || 'Unknown error'}`);
             } finally {
-                 setLoading(false); // Set loading to false after fetch attempt (success or fail)
+                setLoading(false);
             }
         };
 
         fetchVendorBookings();
-        // Add dependencies: auth status, db instance, profile loading state, and vendorBrandName
     }, [auth, db, profile.loading, vendorBrandName]);
 
-    // Handle case where brandName is still loading
-    if (profile.loading) {
-        return (
-             <div className="flex justify-center items-center min-h-[300px]">
-                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-lime"></div>
-             </div>
-         );
-    }
-     // Handle case where brandName is not available after loading (e.g., profile fetch failed or missing data)
-     if (!profile.loading && !vendorBrandName) {
-        return <div className="p-4 text-center text-orange-500">Could not load vendor details. Please check your profile.</div>;
-    }
-
-    // Handle Firestore loading state
-    if (loading) {
-        return (
-             <div className="flex justify-center items-center min-h-[300px]">
-                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-                  <span className="ml-3">Loading bookings...</span>
-             </div>
-         );
-    }
-
-    // Handle fetch errors
-    if (error) {
-        return <div className="p-4 text-center text-red-500">{error}</div>;
-    }
-
-    // Format timestamp utility function
-    const formatTimestamp = (timestampMillis: number): string => {
-        if (!timestampMillis) return 'N/A';
+    const handleAcceptBooking = async (firestoreDocId: string) => {
         try {
-            return new Date(timestampMillis).toLocaleString();
-        } catch (e) {
-            return 'Invalid Date';
+            setProcessingBookingId(firestoreDocId);
+            const bookingDoc = doc(db, 'CarsPaymentSuccessDetails', firestoreDocId);
+            await updateDoc(bookingDoc, {
+                status: 'accepted',
+                updatedAt: new Date().toISOString()
+            });
+            
+            setBookings(bookings.map(booking => 
+                booking.id === firestoreDocId 
+                    ? { ...booking, status: 'accepted' } 
+                    : booking
+            ));
+        } catch (error) {
+            console.error('Error accepting booking:', error);
+            setError('Failed to accept booking');
+        } finally {
+            setProcessingBookingId(null);
         }
-    }
+    };
+    const handleEditStatus = (bookingId: string) => {
+        setEditingStatus(bookingId);
+        setRejectionReason(bookings.find(b => b.id === bookingId)?.rejectionReason || '');
+    };
+
+    const cancelEdit = () => {
+        setEditingStatus(null);
+        setRejectionReason('');
+    };
+
+    const handleRejectBooking = async (firestoreDocId: string) => {
+        if (!rejectionReason.trim()) {
+            setError('Please provide a reason for rejection');
+            return;
+        }
+
+        try {
+            setProcessingBookingId(firestoreDocId);
+            const bookingDoc = doc(db, 'CarsPaymentSuccessDetails', firestoreDocId);
+            await updateDoc(bookingDoc, {
+                status: 'rejected',
+                rejectionReason: rejectionReason,
+                updatedAt: new Date().toISOString()
+            });
+            
+            setBookings(bookings.map(booking => 
+                booking.id === firestoreDocId 
+                    ? { ...booking, status: 'rejected', rejectionReason } 
+                    : booking
+            ));
+            setRejectionReason('');
+        } catch (error) {
+            console.error('Error rejecting booking:', error);
+            setError('Failed to reject booking');
+        } finally {
+            setProcessingBookingId(null);
+        }
+    };
+
+    const filteredAndSortedBookings = useMemo(() => {
+        const now = new Date();
+        const filtered = bookings.filter(booking => {
+            const start = parseBookingDateTime(booking.StartDate, booking.StartTime);
+            const end = parseBookingDateTime(booking.EndDate, booking.EndTime);
+
+            if (!start || !end) return false;
+
+            let timeFilterPassed = false;
+            switch (activeFilter) {
+                case 'upcoming': timeFilterPassed = start > now; break;
+                case 'active': timeFilterPassed = now >= start && now <= end; break;
+                case 'past': timeFilterPassed = end < now; break;
+                default: timeFilterPassed = true;
+            }
+
+            const searchLower = searchQuery.toLowerCase();
+            const searchPassed = !searchLower || [
+                booking.FirstName, booking.Email, booking.PhoneNumber,
+                booking.bookingId, booking.CarName, booking.City,
+                booking.paymentId, booking['Package Selected']
+            ].some(field => field?.toLowerCase().includes(searchLower));
+
+            return timeFilterPassed && searchPassed;
+        });
+
+        return [...filtered].sort((a, b) => {
+            switch (sortOption) {
+                case 'newest':
+                    return b.DateOfBooking - a.DateOfBooking;
+                case 'oldest':
+                    return a.DateOfBooking - b.DateOfBooking;
+                case 'price-high':
+                    return parseFloat(b.price) - parseFloat(a.price);
+                case 'price-low':
+                    return parseFloat(a.price) - parseFloat(b.price);
+                case 'name-asc':
+                    return a.CarName.localeCompare(b.CarName);
+                case 'name-desc':
+                    return b.CarName.localeCompare(a.CarName);
+                default:
+                    return 0;
+            }
+        });
+    }, [bookings, activeFilter, searchQuery, sortOption]);
+
+    const toggleBookingExpansion = (bookingId: string) => {
+        setExpandedBookingId(expandedBookingId === bookingId ? null : bookingId);
+    };
+
+    const renderSearchBar = () => (
+        <div className="relative mb-8 max-w-2xl mx-auto">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FiSearch className="text-gray-400" />
+            </div>
+            <input
+                type="text"
+                placeholder="Search by name, email, phone, booking ID..."
+                className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+            />
+        </div>
+    );
+
+    const renderSortAndFilter = () => (
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+            <div className="flex items-center space-x-2">
+                <FiFilter className="text-gray-500 dark:text-gray-400" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Filter:</span>
+                <div className="flex space-x-1 overflow-x-auto pb-2">
+                    {(['active', 'upcoming', 'past', 'all'] as BookingFilter[]).map((filter) => (
+                        <button
+                            key={filter}
+                            onClick={() => setActiveFilter(filter)}
+                            className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+                                activeFilter === filter
+                                    ? 'bg-blue-600 text-white shadow-md dark:bg-lime dark:text-gray-900'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                            }`}
+                        >
+                            {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            
+            <div className="relative">
+                <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value as SortOption)}
+                    className="appearance-none pl-3 pr-8 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="price-high">Price (High to Low)</option>
+                    <option value="price-low">Price (Low to High)</option>
+                    <option value="name-asc">Car Name (A-Z)</option>
+                    <option value="name-desc">Car Name (Z-A)</option>
+                </select>
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                    <FiChevronDown className="text-gray-500" />
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderBookingStatusActions = (booking: Booking) => {
+        if (activeFilter !== 'upcoming' || booking.Cancelled) return null;
+        
+        const isProcessing = processingBookingId === booking.id;
+        const isEditing = editingStatus === booking.id;
+    
+        if (isEditing) {
+            return (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                    <div className="grid grid-cols-3 gap-2">
+                        <button
+                            onClick={() => handleAcceptBooking(booking.id)}
+                            disabled={isProcessing}
+                            className="py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? 'Processing...' : 'Accept'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                updateDoc(doc(db, 'CarsPaymentSuccessDetails', booking.id), {
+                                    status: 'pending',
+                                    rejectionReason: '',
+                                    updatedAt: new Date().toISOString()
+                                }).then(() => {
+                                    setBookings(bookings.map(b => 
+                                        b.id === booking.id 
+                                            ? { ...b, status: 'pending', rejectionReason: '' } 
+                                            : b
+                                    ));
+                                    setEditingStatus(null);
+                                });
+                            }}
+                            disabled={isProcessing}
+                            className="py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? 'Processing...' : 'Set Pending'}
+                        </button>
+                        <button
+                            onClick={cancelEdit}
+                            className="py-2 bg-gray-500 hover:bg-gray-600 text-white font-medium rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <textarea
+                            placeholder="Enter reason for rejection..."
+                            className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                            rows={3}
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                        />
+                        <button
+                            onClick={() => handleRejectBooking(booking.id)}
+                            disabled={isProcessing || !rejectionReason.trim()}
+                            className="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? 'Processing...' : 'Reject'}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+    
+        return (
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {booking.status === 'pending' ? (
+                    <div className="space-y-3">
+                        <button
+                            onClick={() => handleAcceptBooking(booking.id)}
+                            disabled={isProcessing}
+                            className="w-full py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? 'Processing...' : 'Accept Booking'}
+                        </button>
+                        <button
+                            onClick={() => toggleBookingExpansion(booking.bookingId)}
+                            disabled={isProcessing}
+                            className="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Reject Booking
+                        </button>
+                        {expandedBookingId === booking.bookingId && (
+                            <div className="space-y-2">
+                                <textarea
+                                    placeholder="Enter reason for rejection..."
+                                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                                    rows={3}
+                                    value={rejectionReason}
+                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                />
+                                <button
+                                    onClick={() => handleRejectBooking(booking.id)}
+                                    disabled={isProcessing || !rejectionReason.trim()}
+                                    className="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isProcessing ? 'Processing...' : 'Confirm Rejection'}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <div className={`p-3 rounded-lg ${
+                        booking.status === 'accepted' 
+                            ? 'bg-green-100 dark:bg-green-900/20' 
+                            : 'bg-red-100 dark:bg-red-900/20'
+                    }`}>
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <p className={`font-medium ${
+                                    booking.status === 'accepted' 
+                                        ? 'text-green-800 dark:text-green-200' 
+                                        : 'text-red-800 dark:text-red-200'
+                                }`}>
+                                    Booking {booking.status}
+                                </p>
+                                {booking.rejectionReason && (
+                                    <p className="text-sm text-red-700 dark:text-red-300 mt-1">
+                                        Reason: {booking.rejectionReason}
+                                    </p>
+                                )}
+                            </div>
+                            <button 
+                                onClick={() => handleEditStatus(booking.id)}
+                                className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
+                                title="Edit status"
+                            >
+                                <FiEdit />
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const renderBookingCard = (booking: Booking) => {
+        const isExpanded = expandedBookingId === booking.bookingId;
+        const startDate = parseBookingDateTime(booking.StartDate, booking.StartTime);
+        const endDate = parseBookingDateTime(booking.EndDate, booking.EndTime);
+        
+        return (
+            <div key={`${booking.id}-${booking.bookingId}`} className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg">
+                <div className="relative">
+                    <img
+                        src={booking.CarImage || '/placeholder-car.png'}
+                        alt={booking.CarName}
+                        className="w-full h-48 object-cover"
+                        onError={(e) => (e.currentTarget.src = '/placeholder-car.png')}
+                    />
+                    <div className="absolute top-2 right-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            booking.Cancelled 
+                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                                : booking.status === 'rejected'
+                                    ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100'
+                                    : booking.status === 'accepted'
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
+                        }`}>
+                            {booking.Cancelled ? 'Cancelled' : 
+                             booking.status === 'accepted' ? 'Accepted' : 
+                             booking.status === 'rejected' ? 'Rejected' : 'Pending'}
+                        </span>
+                    </div>
+                </div>
+                
+                <div className="p-5">
+                    <div className="flex justify-between items-start mb-3">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white truncate">
+                            {booking.CarName}
+                        </h2>
+                        <span className="text-lg font-semibold text-blue-600 dark:text-lime">
+                            ₹{booking.price}
+                        </span>
+                    </div>
+                    
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-3">
+                        <FiCalendar className="mr-1" />
+                        <span>
+                            {startDate?.toLocaleDateString()} - {endDate?.toLocaleDateString()}
+                        </span>
+                    </div>
+                    
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        <FiMapPin className="mr-1" />
+                        <span>{booking.City}</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+                        <div className="flex items-center">
+                            <FiInfo className="mr-1 text-gray-500" />
+                            <span className="font-medium">ID:</span>
+                            <span className="ml-1 truncate">{booking.bookingId}</span>
+                        </div>
+                        <div className="flex items-center">
+                            <FiPackage className="mr-1 text-gray-500" />
+                            <span>{booking['Package Selected']}</span>
+                        </div>
+                    </div>
+                    
+                    <button
+                        onClick={() => toggleBookingExpansion(booking.bookingId)}
+                        className="w-full py-2 flex items-center justify-center text-blue-600 dark:text-lime font-medium text-sm hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                        {isExpanded ? (
+                            <>
+                                <span>Show Less</span>
+                                <FiChevronUp className="ml-1" />
+                            </>
+                        ) : (
+                            <>
+                                <span>View Details</span>
+                                <FiChevronDown className="ml-1" />
+                            </>
+                        )}
+                    </button>
+                    
+                    {isExpanded && (
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-50 dark:bg-gray-700 flex items-center justify-center mr-3">
+                                    <FiMail className="text-blue-600 dark:text-lime" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Customer</p>
+                                    <p className="text-gray-900 dark:text-white">{booking.FirstName}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{booking.Email}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-50 dark:bg-gray-700 flex items-center justify-center mr-3">
+                                    <FiPhone className="text-blue-600 dark:text-lime" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</p>
+                                    <p className="text-gray-900 dark:text-white">{booking.PhoneNumber}</p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-50 dark:bg-gray-700 flex items-center justify-center mr-3">
+                                    <FiClock className="text-blue-600 dark:text-lime" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Booking Period</p>
+                                    <p className="text-gray-900 dark:text-white">
+                                        {startDate?.toLocaleString()} - {endDate?.toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-50 dark:bg-gray-700 flex items-center justify-center mr-3">
+                                    <FiDollarSign className="text-blue-600 dark:text-lime" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Payment Details</p>
+                                    <p className="text-gray-900 dark:text-white">₹{booking.price}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Actual: ₹{booking.actualPrice} • {booking.paymentId}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-start">
+                                <div className="flex-shrink-0 h-10 w-10 rounded-full bg-blue-50 dark:bg-gray-700 flex items-center justify-center mr-3">
+                                    <Car className="text-blue-600 dark:text-lime" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Delivery Type</p>
+                                    <p className="text-gray-900 dark:text-white">{booking.deliveryType}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        {booking['Pickup Location'] || 'Location not specified'}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {booking.Cancelled && (
+                                <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg">
+                                    <p className="text-sm font-medium text-red-800 dark:text-red-200">Cancellation Details</p>
+                                    {booking.refundTimestamp && (
+                                        <p className="text-sm text-red-700 dark:text-red-300">
+                                            Refunded at: {booking.refundTimestamp}
+                                        </p>
+                                    )}
+                                    {booking.RefundData?.['Booking Cancelled'] && (
+                                        <p className="text-sm text-red-700 dark:text-red-300">
+                                            Refund Amount: ₹{booking.RefundData['Booking Cancelled']}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {renderBookingStatusActions(booking)}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const getEmptyMessage = () => {
+        if (searchQuery) return 'No bookings match your search';
+        return {
+            active: 'No active bookings found',
+            upcoming: 'No upcoming bookings found',
+            past: 'No past bookings found',
+            all: bookings.length === 0 
+                ? `No bookings found for ${vendorBrandName}` 
+                : 'No bookings match the current filter'
+        }[activeFilter];
+    };
+
+    if (profile.loading || loading) return (
+        <div className="flex justify-center items-center min-h-[400px] dark:text-white">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mr-3"></div>
+            {profile.loading ? 'Loading Profile...' : 'Loading Bookings...'}
+        </div>
+    );
+
+    if (error || !vendorBrandName) return (
+        <div className="p-6 text-center text-red-600 dark:text-red-400 text-lg">
+            {error || 'Could not load vendor details'}
+        </div>
+    );
 
     return (
-        // Apply similar styling context if needed (e.g., dark mode compatibility)
-        <div className="container mx-auto p-4 dark:text-white">
-            <h1 className="text-2xl font-bold mb-6 text-center dark:text-lime">Your Bookings</h1>
+        <div className="container mx-auto px-4 sm:px-6 py-8">
+            <div className="max-w-7xl mx-auto">
+                <div className="text-center mb-10">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                        Your Bookings
+                    </h1>
+                    <p className="text-lg text-gray-600 dark:text-gray-400">
+                        {vendorBrandName}
+                    </p>
+                </div>
 
-            {bookings.length === 0 ? (
-                <div className="text-center text-gray-500 dark:text-gray-400 mt-10">No bookings found for your brand ({vendorBrandName}).</div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {bookings.map((booking) => (
-                        // Use booking.bookingId as key since it seems to be the intended unique identifier
-                        <div key={booking.bookingId} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transform transition duration-300 hover:scale-105">
-                            <img
-                                src={booking.CarImage || '/placeholder-image.png'} // Provide a fallback image
-                                alt={booking.CarName}
-                                className="w-full h-48 object-cover"
-                                // Add error handling for images if necessary
-                                onError={(e) => (e.currentTarget.src = '/placeholder-image.png')}
-                            />
-                            <div className="p-4">
-                                <h2 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">{booking.CarName}</h2>
-                                <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-                                    <p><span className="font-medium text-gray-700 dark:text-gray-100">Booking ID:</span> {booking.bookingId}</p>
-                                    <p><span className="font-medium text-gray-700 dark:text-gray-100">Customer:</span> {booking.FirstName} ({booking.Email})</p>
-                                    <p><span className="font-medium text-gray-700 dark:text-gray-100">Phone:</span> {booking.PhoneNumber}</p>
-                                    <p><span className="font-medium text-gray-700 dark:text-gray-100">Dates:</span> {booking.StartDate} ({booking.StartTime}) - {booking.EndDate} ({booking.EndTime})</p>
-                                     <p><span className="font-medium text-gray-700 dark:text-gray-100">City:</span> {booking.City}</p>
-                                     <p><span className="font-medium text-gray-700 dark:text-gray-100">Total Price:</span> ₹{booking.price} (Actual: ₹{booking.actualPrice})</p>
-                                     {booking['Discount applied by user'] && <p><span className="font-medium text-gray-700 dark:text-gray-100">Discount:</span> ₹{booking['Discount applied by user']}</p> }
-                                    <p><span className="font-medium text-gray-700 dark:text-gray-100">Delivery:</span> {booking.deliveryType}</p>
-                                    {booking.deliveryType !== 'Self-Pickup' && <p><span className="font-medium text-gray-700 dark:text-gray-100">Location:</span> {booking.MapLocation || booking['Pickup Location']}</p> }
-                                    <p><span className="font-medium text-gray-700 dark:text-gray-100">Booked At:</span> {formatTimestamp(booking.DateOfBooking)}</p>
-                                    <p><span className="font-medium text-gray-700 dark:text-gray-100">Payment ID:</span> {booking.paymentId}</p>
-                                     <p><span className="font-medium text-gray-700 dark:text-gray-100">Cancelled:</span> <span className={booking.Cancelled ? 'text-red-500 font-semibold' : 'text-green-500 font-semibold'}>{booking.Cancelled ? 'Yes' : 'No'}</span></p>
-                                     {booking.Cancelled && booking.refundTimestamp && <p><span className="font-medium text-gray-700 dark:text-gray-100">Refunded At:</span> {booking.refundTimestamp}</p>}
-                                     {booking.Cancelled && booking.RefundData?.['Booking Cancelled'] && <p><span className="font-medium text-gray-700 dark:text-gray-100">Refund Amount:</span> ₹{booking.RefundData['Booking Cancelled']}</p>}
-                                 </div>
-                             </div>
-                         </div>
-                     ))}
-                 </div>
-             )}
-         </div>
-     );
- };
+                {renderSearchBar()}
+                {renderSortAndFilter()}
+
+                {filteredAndSortedBookings.length === 0 ? (
+                    <div className="text-center py-16">
+                        <div className="mx-auto w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+                            <FiCalendar className="text-3xl text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                            {getEmptyMessage()}
+                        </h3>
+                        <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                            {searchQuery ? 'Try a different search term' : 'When you have bookings, they will appear here'}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredAndSortedBookings.map(renderBookingCard)}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 export default Bookings;
