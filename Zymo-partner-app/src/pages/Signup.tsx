@@ -98,6 +98,7 @@ export function Signup() {
     bankAccount: "",
     ifscCode: "",
     upiId: "",
+    vendorId:"",
     visibility: 1,
   });
   const [cities, setCities] = useState([]);
@@ -708,6 +709,11 @@ export function Signup() {
         formData.password
       );
 
+      // generate vendor ID
+      const timestamp = new Date().getTime();
+      const namePart = formData.fullName.replace(/\s+/g, '').slice(0,3).toUpperCase();
+      const vendorId = `V-${namePart}${timestamp.toString().slice(-6)}`
+
       console.log("Created", user);
       const userRef = doc(db, "partnerWebApp", user.uid);
       await setDoc(userRef, {
@@ -720,6 +726,7 @@ export function Signup() {
         bankAccount: formData.bankAccount,
         ifscCode: formData.ifscCode,
         upiId: formData.upiId || null,
+        vendorId: vendorId,
         createdAt: new Date(),
         updatedAt: new Date(),
         visibility: formData.visibility, // Include visibility field
