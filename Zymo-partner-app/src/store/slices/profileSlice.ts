@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../../lib/firebase';
+import { Timestamp } from 'firebase/firestore';
 
 interface UnavailableHours {
   start: string;
@@ -21,6 +22,7 @@ interface Profile {
   loading: boolean;
   error: string | null;
   unavailableHours?: UnavailableHours;
+  createdAt?: number; // Store as number (milliseconds)
 }
 
 const defaultUnavailableHours: UnavailableHours = {
@@ -44,23 +46,40 @@ const initialState: Profile = {
   unavailableHours: defaultUnavailableHours
 };
 
+const isFirestoreTimestamp = (value: any): value is Timestamp => {
+  return value instanceof Timestamp;
+};
+// Updated convertTimestamps function with proper type handling
+const convertTimestamps = (data: any) => {
+  if (!data) return data;
+  
+  return Object.entries(data).reduce((acc, [key, value]) => {
+    if (isFirestoreTimestamp(value)) {
+      return { ...acc, [key]: value.toMillis() };
+    }
+    return { ...acc, [key]: value };
+  }, {});
+};
+
 export const fetchProfile = createAsyncThunk(
   'profile/fetchProfile',
   async () => {
     if (!auth.currentUser) throw new Error('No authenticated user');
     const docRef = doc(db, 'partnerWebApp', auth.currentUser.uid);
     const docSnap = await getDoc(docRef);
-    if (!docSnap.exists()) throw new Error('Profile not found');
-    const data = docSnap.data();
     
-    // Ensure unavailableHours has proper structure when fetched
+    if (!docSnap.exists()) throw new Error('Profile not found');
+    
+    const rawData = docSnap.data();
+    const convertedData = convertTimestamps(rawData);
+    
     const profileData: Profile = {
       ...initialState,
-      ...data,
-      unavailableHours: data.unavailableHours 
+      ...convertedData,
+      unavailableHours: convertedData.unavailableHours 
         ? { 
-            start: data.unavailableHours.start || defaultUnavailableHours.start,
-            end: data.unavailableHours.end || defaultUnavailableHours.end
+            start: convertedData.unavailableHours.start || defaultUnavailableHours.start,
+            end: convertedData.unavailableHours.end || defaultUnavailableHours.end
           }
         : defaultUnavailableHours
     };
@@ -75,15 +94,15 @@ export const updateProfile = createAsyncThunk(
     if (!auth.currentUser) throw new Error('No authenticated user');
     const docRef = doc(db, 'partnerWebApp', auth.currentUser.uid);
     
-    // Prepare the data to be saved
-    const profileData = {
+    // Convert back to Firestore Timestamp if needed
+    const dataToSave = {
       ...profile,
-      // Ensure unavailableHours is properly structured
-      unavailableHours: profile.unavailableHours || defaultUnavailableHours
+      unavailableHours: profile.unavailableHours || defaultUnavailableHours,
+      createdAt: profile.createdAt ? Timestamp.fromMillis(profile.createdAt) : Timestamp.now()
     };
     
-    await setDoc(docRef, profileData, { merge: true });
-    return profileData;
+    await setDoc(docRef, dataToSave, { merge: true });
+    return profile;
   }
 );
 
@@ -102,7 +121,6 @@ const profileSlice = createSlice({
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
         Object.assign(state, action.payload);
-        // Ensure unavailableHours is set properly
         state.unavailableHours = action.payload.unavailableHours || defaultUnavailableHours;
       })
       .addCase(fetchProfile.rejected, (state, action) => {
@@ -116,7 +134,6 @@ const profileSlice = createSlice({
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.loading = false;
         Object.assign(state, action.payload);
-        // Ensure unavailableHours is updated
         if (action.payload.unavailableHours) {
           state.unavailableHours = action.payload.unavailableHours;
         }
