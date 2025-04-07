@@ -32,49 +32,55 @@ function Step({
 }: StepProps) {
   return (
     <div className={`relative ${isActive ? "opacity-100" : "opacity-50"}`}>
-      <div className="flex items-center">
-        <div className="relative">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center">
+        <div className="relative flex items-center">
           <div
             className={`
-            w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300
-            ${
-              isCompleted
-                ? "bg-lime border-lime"
-                : isActive
-                ? "bg-lime-400 border-lime-400 text-white shadow-lg"
-                : "bg-white border-gray-300 text-gray-500"
-            }
-          `}
+          w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300
+          ${
+            isCompleted
+              ? "bg-lime border-lime"
+              : isActive
+              ? "bg-lime border border-lime sm:shadow-lg"
+              : "bg-white border-gray-300 text-gray-500"
+          }
+        `}
           >
-            {isCompleted ? <Check className="w-6 h-6" /> : stepNumber}
+            {isCompleted ? (
+              <Check className="w-5 h-5 sm:w-6 sm:h-6" />
+            ) : (
+              <span className="text-sm sm:text-base">{stepNumber}</span>
+            )}
           </div>
           {stepNumber < totalSteps && (
             <div
               className={`
-              absolute top-1/2 left-full h-0.5 w-8 -translate-y-1/2 transition-colors duration-300
-              ${isCompleted ? "bg-lime" : "bg-gray-300"}
-            `}
+            hidden sm:block absolute top-1/2 left-full h-0.5 w-8 -translate-y-1/2 transition-colors duration-300
+            ${isCompleted ? "bg-lime" : "bg-gray-300"}
+          `}
             />
           )}
         </div>
-        <div className="ml-4 flex-1">
+
+        <div className="sm:ml-4 flex-1 w-full mt-2 sm:mt-0">
           <h3
             className={`
-            text-lg font-medium transition-colors duration-300
-            ${isActive ? "text-white" : "text-gray-400"}
-          `}
+          text-base sm:text-lg font-medium transition-colors duration-300
+          ${isActive ? "text-white" : "text-gray-400"}
+        `}
           >
             {title}
           </h3>
           {isActive && children && (
-            <div className="bg-white/10 rounded-xl text-white p-6 shadow-lg transition-all duration-300 ease-in-out transform hover:shadow-xl">
+            <div className="bg-white/10 rounded-xl text-white pt-4 pb-8 px-4 shadow-lg transition-all duration-300 ease-in-out transform w-full mt-2">
               {children}
             </div>
           )}
         </div>
       </div>
+
       {stepNumber < totalSteps && (
-        <div className="ml-6 w-0.5 h-8 bg-gray-200" />
+        <div className="ml-5 sm:ml-6 w-0.5 h-8 bg-gray-200 hidden sm:block" />
       )}
     </div>
   );
@@ -98,7 +104,7 @@ export function Signup() {
     bankAccount: "",
     ifscCode: "",
     upiId: "",
-    vendorId:"",
+    vendorId: "",
     visibility: 1,
   });
   const [cities, setCities] = useState([]);
@@ -106,24 +112,37 @@ export function Signup() {
   const [searchTerm, setSearchTerm] = useState(""); // To filter cities
   const [showForm, setShowForm] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-
+  const errorRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null); // Reference for dropdown
   const inputRef = useRef<HTMLInputElement>(null); // Reference for input
+
+  useEffect(() => {
+    if (error) {
+      setTimeout(() => {
+        const element = errorRef.current;
+        if (element) {
+          element.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+          });
+        }
+      }, 100);
+    }
+  }, [error]);
 
   useEffect(() => {
     async function fetchCities(query = "New") {
       // Default query to get initial results
       try {
-        const functionsUrl = 'https://us-central1-zymo-prod.cloudfunctions.net/zymoPartner/';
-        const response = await fetch(
-          `${functionsUrl}cities/indian-cities`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ query }),
-          }
-        );
+        const functionsUrl =
+          "https://us-central1-zymo-prod.cloudfunctions.net/zymoPartner/";
+        const response = await fetch(`${functionsUrl}cities/indian-cities`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        });
         const data = await response.json();
         const cityNames = data.cities.map((city: string) =>
           city.split(",")[0].trim()
@@ -180,7 +199,7 @@ export function Signup() {
       title: "Account Type",
       content: (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4">
             {["individual", "company"].map((type) => (
               <button
                 key={type}
@@ -210,7 +229,7 @@ export function Signup() {
     {
       title: "Account Credentials",
       content: (
-        <div className="space-y-4 min-w-72">
+        <div className="space-y-4 w-full px-4 sm:px-0 sm:min-w-72">
           <Input
             id="email"
             label="Email"
@@ -220,6 +239,7 @@ export function Signup() {
             onChange={(e: { target: { value: any } }) =>
               setFormData({ ...formData, email: e.target.value })
             }
+            className="w-full"
           />
           <Input
             id="password"
@@ -233,6 +253,7 @@ export function Signup() {
                 password: e.target.value,
               })
             }
+            className="w-full"
           />
           <Input
             id="confirmPassword"
@@ -252,6 +273,7 @@ export function Signup() {
                 ? "Passwords don't match"
                 : undefined
             }
+            className="w-full"
           />
         </div>
       ),
@@ -259,7 +281,7 @@ export function Signup() {
     {
       title: "Personal Information",
       content: (
-        <div className="space-y-4 min-w-80">
+        <div className="space-y-4">
           <Input
             id="fullName"
             label="Full Name"
@@ -426,31 +448,33 @@ export function Signup() {
     {
       title: "Terms and Conditions",
       content: (
-        <div className="space-y-4 max-w-4xl">
-          <div className="bg-white/10 p-6 rounded-xl">
-            <div className="text-sm overflow-y-auto">
-              <div className="max-w-4xl mx-auto p-6">
-                <h1 className="text-2xl font-bold mb-6">Vendor Agreement</h1>
+        <div className="space-y-4 w-full px-2 sm:px-0 sm:max-w-4xl">
+          <div className="bg-white/10 p-4 sm:p-6 rounded-xl">
+            <div className="text-xs sm:text-sm overflow-y-auto max-h-[60vh]">
+              <div className="w-full mx-auto p-2 sm:p-6">
+                <h1 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">
+                  Vendor Agreement
+                </h1>
 
-                <p className="mb-6">
+                <p className="mb-4 sm:mb-6">
                   This Vendor Agreement ("Agreement") is a legally binding
                   contract between you ("Vendor") and Zep Tepi Technologies
                   Private Limited ("Zymo"), governing the terms under which you
                   list and rent vehicles through the Zymo platform.
                 </p>
 
-                <p className="mb-6 font-semibold">
+                <p className="mb-4 sm:mb-6 font-semibold">
                   By clicking "I Agree" and proceeding with listing your
                   vehicle(s) on Zymo, you acknowledge that you have read,
                   understood, and agree to be bound by the terms of this
                   Agreement.
                 </p>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     1. Scope of Services
                   </h2>
-                  <ul className="list-disc pl-6 space-y-2">
+                  <ul className="list-disc pl-5 sm:pl-6 space-y-1 sm:space-y-2">
                     <li>
                       Zymo provides a platform for Vendors to list their
                       vehicles for rental by customers.
@@ -467,11 +491,11 @@ export function Signup() {
                   </ul>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     2. Commission and Payment Terms
                   </h2>
-                  <ul className="list-disc pl-6 space-y-2">
+                  <ul className="list-disc pl-5 sm:pl-6 space-y-1 sm:space-y-2">
                     <li>
                       Zymo shall charge a 20% (excl. GST) commission on the
                       rental amount received from the customer.
@@ -492,11 +516,11 @@ export function Signup() {
                   </ul>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     3. Vendor Obligations
                   </h2>
-                  <ul className="list-disc pl-6 space-y-2">
+                  <ul className="list-disc pl-5 sm:pl-6 space-y-1 sm:space-y-2">
                     <li>
                       Vendor shall ensure all listed vehicles are legally
                       registered, insured, and in roadworthy condition.
@@ -516,11 +540,11 @@ export function Signup() {
                   </ul>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     4. Customer Deposits (if applicable)
                   </h2>
-                  <ul className="list-disc pl-6 space-y-2">
+                  <ul className="list-disc pl-5 sm:pl-6 space-y-1 sm:space-y-2">
                     <li>
                       Zymo will collect a refundable security deposit from
                       customers upon booking.
@@ -538,8 +562,8 @@ export function Signup() {
                   </ul>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     5. Termination and Notice
                   </h2>
                   <p>
@@ -549,9 +573,11 @@ export function Signup() {
                   </p>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">6. Indemnification</h2>
-                  <ul className="list-disc pl-6 space-y-2">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                    6. Indemnification
+                  </h2>
+                  <ul className="list-disc pl-5 sm:pl-6 space-y-1 sm:space-y-2">
                     <li>
                       The Vendor agrees to indemnify and hold Zymo harmless
                       against any claims, damages, or legal disputes arising
@@ -565,16 +591,20 @@ export function Signup() {
                   </ul>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">7. Confidentiality</h2>
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                    7. Confidentiality
+                  </h2>
                   <p>
                     Both parties agree to maintain the confidentiality of
                     proprietary business information and customer data.
                   </p>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">8. Force Majeure</h2>
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                    8. Force Majeure
+                  </h2>
                   <p>
                     Neither party shall be liable for failure to perform
                     obligations due to circumstances beyond their reasonable
@@ -583,11 +613,11 @@ export function Signup() {
                   </p>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     9. Dispute Resolution
                   </h2>
-                  <ul className="list-disc pl-6 space-y-2">
+                  <ul className="list-disc pl-5 sm:pl-6 space-y-1 sm:space-y-2">
                     <li>
                       Any disputes shall be resolved through mutual discussion.
                     </li>
@@ -600,16 +630,18 @@ export function Signup() {
                   </ul>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">10. Governing Law</h2>
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
+                    10. Governing Law
+                  </h2>
                   <p>
                     This Agreement shall be governed by and construed in
                     accordance with the laws of India.
                   </p>
                 </div>
 
-                <div className="mb-8">
-                  <h2 className="text-xl font-bold mb-4">
+                <div className="mb-6 sm:mb-8">
+                  <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
                     11. Acceptance of Terms
                   </h2>
                   <p>
@@ -620,15 +652,15 @@ export function Signup() {
               </div>
             </div>
           </div>
-          <div className="flex mt-4 gap-1">
+          <div className="flex mt-4 gap-1 items-start">
             <input
               type="checkbox"
               id="acceptTerms"
               checked={acceptedTerms}
               onChange={(e) => setAcceptedTerms(e.target.checked)}
-              className="w-4 h-4 text-lime rounded focus:ring-lime"
+              className="w-4 h-4 text-lime rounded focus:ring-lime mt-1 flex-shrink-0"
             />
-            <label htmlFor="acceptTerms" className="ml-2 text-sm">
+            <label htmlFor="acceptTerms" className="ml-2 text-xs sm:text-sm">
               I acknowledge that I have read, understood, and agree to the above
               Terms and Conditions.
             </label>
@@ -711,8 +743,11 @@ export function Signup() {
 
       // generate vendor ID
       const timestamp = new Date().getTime();
-      const namePart = formData.fullName.replace(/\s+/g, '').slice(0,3).toUpperCase();
-      const vendorId = `V-${namePart}${timestamp.toString().slice(-6)}`
+      const namePart = formData.fullName
+        .replace(/\s+/g, "")
+        .slice(0, 3)
+        .toUpperCase();
+      const vendorId = `V-${namePart}${timestamp.toString().slice(-6)}`;
 
       console.log("Created", user);
       const userRef = doc(db, "partnerWebApp", user.uid);
@@ -759,10 +794,13 @@ export function Signup() {
           </p>
         </div>
 
-        <div className="border border-lime backdrop-blur-sm rounded-2xl p-8 shadow-2xl">
+        <div className="border border-lime backdrop-blur-sm rounded-2xl p-5 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
-              <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+              <div
+                className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md"
+                ref={errorRef}
+              >
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg
