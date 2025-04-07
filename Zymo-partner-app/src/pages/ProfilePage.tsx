@@ -147,22 +147,22 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="bg-lime rounded-2xl   bg-transparent">
-      <div className="max-w-4xl mx-auto px-4 py-8 text-lime-400">
-        <div className="  bg-darkgray rounded-2xl shadow-lg p-6 animate-slide-in border border-lime">
+    <div className="rounded-2xl ">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className=" bg-darkgray rounded-2xl shadow-lg p-6 animate-slide-in border border-lime">
           {/* Profile Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4">
-              <div className="bg-lime-200 text-lime p-3 rounded-full">
-                <User className="h-6 w-6 text-lime-600" />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-6 sm:mb-8">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="bg-lime-200 p-2 sm:p-3 rounded-full">
+                <User className="h-5 w-5 sm:h-6 sm:w-6 text-lime" />
               </div>
-              <h1 className="text-2xl font-bold   text-lime">
+              <h1 className="text-xl sm:text-2xl font-bold text-lime">
                 Profile Settings
               </h1>
             </div>
             <button
               onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              className="flex items-center space-x-2 font-semibold bg-lime px-4 py-2 rounded-full"
+              className="flex items-center justify-center space-x-2 font-semibold bg-lime hover:bg-lime-600 transition-colors px-4 py-2 text-sm rounded-full w-full sm:w-auto"
             >
               <Save className="h-4 w-4" />
               <span>{isEditing ? "Save Changes" : "Edit Profile"}</span>
@@ -339,12 +339,12 @@ export function ProfilePage() {
               {formData.cities.map((city) => (
                 <div
                   key={city}
-                  className="px-3 py-2 bg-lime rounded-full flex justify-between text-sm"
+                  className="w-full px-3 py-1 sm:px-4 sm:py-2 bg-lime rounded-full flex items-center justify-between text-sm duration-200"
                 >
                   {city}
                   {isEditing && (
                     <button onClick={() => deleteCity(city)}>
-                      <Trash className=" text-darkgray" />
+                      <Trash className="text-darkgray size-5" />
                     </button>
                   )}
                 </div>
@@ -359,10 +359,10 @@ export function ProfilePage() {
                   type="text"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  className="mt-1 pl-3 block border text-white rounded-2xl p-2   bg-lightgray   border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
+                  className="mt-1 pl-3 block border text-white rounded-2xl p-2  bg-lightgray border-gray-700 shadow-sm focus:ring-lime focus:border-lime"
                   placeholder="Search cities..."
                 />
-                <div className="absolute left-0 bg-white/90 w-full mt-1   bg-lightgray border   text-white border-lime rounded-2xl shadow-lg max-h-60 overflow-y-auto z-50">
+                <div className="absolute left-0 bg-white/90 w-full mt-1   bg-lightgray border text-white border-lime rounded-2xl shadow-lg max-h-60 overflow-y-auto z-50">
                   <div className="max-h-48 overflow-y-auto">
                     {filteredCities.map((city) => (
                       <div
