@@ -56,12 +56,12 @@ const PickupForm: React.FC<PickupFormProps> = ({ city, onLocationChange }) => {
 
   return (
     <div className="p-1">
-      <h2 className="mb-1   text-white text-sm">Pickup Location for {city}</h2>
+      <h2 className="mb-1  text-white text-sm">Pickup Location for {city}</h2>
       <div className="mb-1">
         <input
           id={inputId}
           type="text"
-          className="w-full p-2 border   bg-lightgray   text-white border-lightgray rounded-xl text-sm"
+          className="w-full p-2 border  bg-lightgray  text-white border-lightgray rounded-xl text-sm"
           placeholder={`Search for pickup location in ${city}`}
           value={address}
           onChange={(e) => setAddress(e.target.value)}

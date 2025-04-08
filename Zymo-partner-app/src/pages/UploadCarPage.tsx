@@ -5,7 +5,7 @@ import { Car as CarIcon, Upload, X } from "lucide-react";
 
 import { Button } from "../components/Button";
 import { Input } from "../components/Input";
-import { updateDoc, setDoc, Firestore } from "firebase/firestore";
+import { updateDoc, setDoc } from "firebase/firestore";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../lib/firebase"; // Import Firebase Firestore instance
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -553,7 +553,7 @@ export function UploadCarPage() {
                   {formData.cities.map((city) => (
                     <div
                       key={city}
-                      className="bg-gray-100   bg-black/20 p-3 rounded-2xl"
+                      className=" bg-black/20 p-3 rounded-2xl"
                     >
                       <div className="flex justify-between items-center mb-2">
                         <span className="font-medium   text-white">{city}</span>
